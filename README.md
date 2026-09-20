@@ -19,7 +19,7 @@ Every number below is produced by a script in this repository and written under
 | Milestone | State |
 |---|---|
 | 1. Data and metrics | ✅ complete |
-| 2. Frontier baselines (Sonnet 5, Haiku 4.5) | ⬜ |
+| 2. Frontier baselines (Sonnet 5, Haiku 4.5) | ✅ complete |
 | 3. LoRA fine-tune (Qwen3.5-2B) | ⬜ |
 | 4. Constrained decoding (vLLM JSON schema) | ⬜ |
 | 5. Cascade routing | ⬜ |
@@ -135,11 +135,68 @@ gold span. They are kept as a degradation check, not read as error.
 
 ### Extraction quality
 
-`TBD` — milestone 2.
+Few-shot (3 exemplars from train), structured outputs, prompt caching.
+Intervals are 95% bootstrap over documents. Full reports in
+[`results/baselines/`](results/baselines/).
+
+**Argument Annotated Essays, test split (80 documents)**
+
+| Model | Component F1 (overlap, untyped) | Component F1 (overlap, typed) | Relation F1 (overlap) |
+|---|---|---|---|
+| Claude Haiku 4.5 | 0.859 [0.830, 0.882] | 0.709 [0.673, 0.743] | 0.441 [0.390, 0.494] |
+| Claude Sonnet 5 | **0.883** [0.868, 0.897] | **0.762** [0.733, 0.791] | **0.485** [0.428, 0.542] |
+
+**arg-microtexts, out-of-domain (112 documents).** Typed metrics are N/A —
+this corpus has no component type labels.
+
+| Model | Component F1 (overlap, untyped) | Relation F1 (overlap) |
+|---|---|---|
+| Claude Haiku 4.5 | 0.843 [0.810, 0.874] | 0.514 [0.460, 0.567] |
+| Claude Sonnet 5 | **0.945** [0.930, 0.960] | **0.676** [0.626, 0.725] |
+
+**Is Sonnet actually better?** Paired bootstrap over the same documents, in
+[`results/comparisons/`](results/comparisons/). On AAE test it wins
+significantly on 7 of 8 measures — but the headline relation F1 gap is
+`+0.044 [-0.001, +0.089]`, which **straddles zero**. Comparing the two
+marginal intervals would have missed that; the paired test is what makes the
+claim honest.
+
+Three things worth noting:
+
+- **Zero invalid outputs in 548 API calls.** Structured outputs
+  (`output_config.format`) made the v1 JSON-repair path entirely unnecessary on
+  the Claude route.
+- **Only 2 components out of ~7,000 could not be aligned** back to a span, so
+  the generate-then-align design costs almost nothing in practice.
+- **Relation F1 is the weak half** of both models, at 0.44–0.49 in domain.
+  Components are close to solved; relations are not.
+
+### Exact-span F1 is a trap
+
+The alignment ceiling above is not academic. On arg-microtexts, whose spans are
+reconstructed from EDUs, exact-span component F1 is **0.025** for Sonnet 5
+while overlap F1 on the *same predictions* is **0.945**. The model is finding
+the right components and being scored near zero for not reproducing byte
+offsets. This is why overlap is the headline metric throughout.
 
 ### Cost and latency
 
-`TBD` — milestone 2.
+Measured per document from the cost ledger
+([`results/cost/ledger.jsonl`](results/cost/)), synchronous calls, prompt
+caching on. Latency is wall-clock from an ordinary consumer connection.
+
+| Model | $/doc (AAE) | $/1K docs | p50 | p95 |
+|---|---|---|---|---|
+| Claude Haiku 4.5 | $0.0047 | $4.66 | 3.42 s | 4.68 s |
+| Claude Sonnet 5 | $0.0195 | $19.51 | 10.93 s | 24.19 s |
+
+Sonnet 5 costs **4.2×** more and is **3.2×** slower for +0.053 typed component
+F1 and +0.044 relation F1. That gap is the whole reason to ask whether a
+fine-tuned 2B model can close it.
+
+Prompt caching matters more than it looks: the 3-exemplar prefix is ~4,970
+tokens carried on every request, and caching bills it at a tenth. It also has
+a trap — see the note on Haiku's 4,096-token minimum in *Reproducing* below.
 
 ### Cascade operating points
 

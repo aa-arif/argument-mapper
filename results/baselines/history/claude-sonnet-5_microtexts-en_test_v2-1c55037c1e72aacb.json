@@ -1,0 +1,249 @@
+{
+  "model": "claude-sonnet-5",
+  "corpus": "microtexts-en",
+  "split": "test",
+  "prompt_version": "v2-1c55037c1e72aacb",
+  "exemplar_ids": [
+    "essay078",
+    "essay222",
+    "essay375"
+  ],
+  "wall_seconds": 926.38,
+  "run": {
+    "documents": 112,
+    "api_calls": 112,
+    "cache_hits": 0,
+    "errors": 0,
+    "invalid_outputs": 0,
+    "unalignable_components": 0,
+    "dollars_total": 1.198883,
+    "dollars_per_doc": 0.010704,
+    "input_tokens": 17095,
+    "output_tokens": 101972,
+    "cache_read_tokens": 724864,
+    "cache_write_tokens": 0,
+    "latency_s": {
+      "n": 112,
+      "p50": 7.156,
+      "p95": 16.258,
+      "p99": 21.445,
+      "mean": 8.244
+    }
+  },
+  "ledger": {
+    "spent_usd": 5.180866,
+    "cap_usd": 20.0,
+    "remaining_usd": 14.819134
+  },
+  "scores": {
+    "exact/typed": {
+      "status": "not_applicable"
+    },
+    "exact/untyped": {
+      "components": {
+        "tp": 14,
+        "fp": 529,
+        "fn": 562,
+        "support": 576,
+        "precision": 0.02578268876611418,
+        "recall": 0.024305555555555556,
+        "f1": 0.025022341376228777,
+        "f1_ci": {
+          "point": 0.025022341376228777,
+          "ci_low": 0.01064773735581189,
+          "ci_high": 0.04285714285714286,
+          "confidence": 0.95,
+          "iterations": 10000
+        }
+      },
+      "relations": {
+        "tp": 4,
+        "fp": 399,
+        "fn": 460,
+        "support": 464,
+        "precision": 0.009925558312655087,
+        "recall": 0.008620689655172414,
+        "f1": 0.00922722029988466,
+        "f1_ci": {
+          "point": 0.00922722029988466,
+          "ci_low": 0.0,
+          "ci_high": 0.021301775147928994,
+          "confidence": 0.95,
+          "iterations": 10000
+        }
+      },
+      "components_by_type": {
+        "Claim": {
+          "tp": 0,
+          "fp": 124,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "MajorClaim": {
+          "tp": 0,
+          "fp": 104,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "Premise": {
+          "tp": 0,
+          "fp": 301,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "untyped": {
+          "tp": 14,
+          "fp": 0,
+          "fn": 562,
+          "support": 576,
+          "precision": 1.0,
+          "recall": 0.024305555555555556,
+          "f1": 0.04745762711864407,
+          "f1_ci": {
+            "point": 0.04745762711864407,
+            "ci_low": 0.02040816326530612,
+            "ci_high": 0.08013355592654424,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        }
+      },
+      "relations_by_type": {}
+    },
+    "overlap>=0.5/typed": {
+      "status": "not_applicable"
+    },
+    "overlap>=0.5/untyped": {
+      "components": {
+        "tp": 529,
+        "fp": 14,
+        "fn": 47,
+        "support": 576,
+        "precision": 0.9742173112338858,
+        "recall": 0.9184027777777778,
+        "f1": 0.9454870420017872,
+        "f1_ci": {
+          "point": 0.9454870420017873,
+          "ci_low": 0.9304424413809356,
+          "ci_high": 0.9597135183527306,
+          "confidence": 0.95,
+          "iterations": 10000
+        }
+      },
+      "relations": {
+        "tp": 293,
+        "fp": 110,
+        "fn": 171,
+        "support": 464,
+        "precision": 0.7270471464019851,
+        "recall": 0.6314655172413793,
+        "f1": 0.6758938869665513,
+        "f1_ci": {
+          "point": 0.6758938869665513,
+          "ci_low": 0.6262608225108226,
+          "ci_high": 0.7251738685051127,
+          "confidence": 0.95,
+          "iterations": 10000
+        }
+      },
+      "components_by_type": {
+        "Claim": {
+          "tp": 0,
+          "fp": 4,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "MajorClaim": {
+          "tp": 0,
+          "fp": 1,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "Premise": {
+          "tp": 0,
+          "fp": 9,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "untyped": {
+          "tp": 529,
+          "fp": 0,
+          "fn": 47,
+          "support": 576,
+          "precision": 1.0,
+          "recall": 0.9184027777777778,
+          "f1": 0.9574660633484163,
+          "f1_ci": {
+            "point": 0.9574660633484163,
+            "ci_low": 0.9450945094509451,
+            "ci_high": 0.9693260078267854,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        }
+      },
+      "relations_by_type": {}
+    }
+  },
+  "errors": {}
+}

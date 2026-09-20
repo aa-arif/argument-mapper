@@ -1,0 +1,71 @@
+{
+  "gpu": "A10G",
+  "candidates": [
+    {
+      "model_id": "Qwen/Qwen3.5-2B",
+      "transformers_version": "5.17.0",
+      "torch_version": "2.14.0+cu130",
+      "architectures": [
+        "Qwen3_5ForConditionalGeneration"
+      ],
+      "model_type": "qwen3_5",
+      "config_ok": true,
+      "tokenizer_ok": true,
+      "has_chat_template": true,
+      "loaded_with": "AutoModelForCausalLM",
+      "load_errors": {},
+      "weights_ok": true,
+      "parameters": 1881825088,
+      "lora_targets_found": {
+        "gate_proj": 24,
+        "up_proj": 24,
+        "down_proj": 24,
+        "q_proj": 6,
+        "k_proj": 6,
+        "v_proj": 6,
+        "o_proj": 6
+      },
+      "sample_language_module_paths": [
+        "model.layers.0.mlp.gate_proj",
+        "model.layers.0.mlp.up_proj",
+        "model.layers.0.mlp.down_proj"
+      ],
+      "has_vision_tower": false,
+      "text_generation_ok": true,
+      "sample_output": "OK"
+    },
+    {
+      "model_id": "Qwen/Qwen3-1.7B",
+      "transformers_version": "5.17.0",
+      "torch_version": "2.14.0+cu130",
+      "architectures": [
+        "Qwen3ForCausalLM"
+      ],
+      "model_type": "qwen3",
+      "config_ok": true,
+      "tokenizer_ok": true,
+      "has_chat_template": true,
+      "loaded_with": "AutoModelForCausalLM",
+      "load_errors": {},
+      "weights_ok": true,
+      "parameters": 1720574976,
+      "lora_targets_found": {
+        "q_proj": 28,
+        "k_proj": 28,
+        "v_proj": 28,
+        "o_proj": 28,
+        "gate_proj": 28,
+        "up_proj": 28,
+        "down_proj": 28
+      },
+      "sample_language_module_paths": [
+        "model.layers.0.self_attn.q_proj",
+        "model.layers.0.self_attn.k_proj",
+        "model.layers.0.self_attn.v_proj"
+      ],
+      "has_vision_tower": false,
+      "text_generation_ok": true,
+      "sample_output": "<think>\nOkay, the user wants me"
+    }
+  ]
+}

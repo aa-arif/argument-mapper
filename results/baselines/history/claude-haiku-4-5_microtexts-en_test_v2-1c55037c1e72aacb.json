@@ -1,0 +1,249 @@
+{
+  "model": "claude-haiku-4-5",
+  "corpus": "microtexts-en",
+  "split": "test",
+  "prompt_version": "v2-1c55037c1e72aacb",
+  "exemplar_ids": [
+    "essay078",
+    "essay222",
+    "essay375"
+  ],
+  "wall_seconds": 189.09,
+  "run": {
+    "documents": 112,
+    "api_calls": 112,
+    "cache_hits": 0,
+    "errors": 0,
+    "invalid_outputs": 0,
+    "unalignable_components": 0,
+    "dollars_total": 0.204451,
+    "dollars_per_doc": 0.001825,
+    "input_tokens": 12725,
+    "output_tokens": 27208,
+    "cache_read_tokens": 556864,
+    "cache_write_tokens": 0,
+    "latency_s": {
+      "n": 112,
+      "p50": 1.503,
+      "p95": 2.277,
+      "p99": 2.592,
+      "mean": 1.573
+    }
+  },
+  "ledger": {
+    "spent_usd": 1.158007,
+    "cap_usd": 20.0,
+    "remaining_usd": 18.841993
+  },
+  "scores": {
+    "exact/typed": {
+      "status": "not_applicable"
+    },
+    "exact/untyped": {
+      "components": {
+        "tp": 4,
+        "fp": 525,
+        "fn": 572,
+        "support": 576,
+        "precision": 0.007561436672967864,
+        "recall": 0.006944444444444444,
+        "f1": 0.007239819004524887,
+        "f1_ci": {
+          "point": 0.007239819004524887,
+          "ci_low": 0.0017574692442882249,
+          "ci_high": 0.01477411790006195,
+          "confidence": 0.95,
+          "iterations": 10000
+        }
+      },
+      "relations": {
+        "tp": 0,
+        "fp": 318,
+        "fn": 464,
+        "support": 464,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "f1_ci": {
+          "point": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "confidence": 0.95,
+          "iterations": 10000
+        }
+      },
+      "components_by_type": {
+        "Claim": {
+          "tp": 0,
+          "fp": 71,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "MajorClaim": {
+          "tp": 0,
+          "fp": 96,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "Premise": {
+          "tp": 0,
+          "fp": 358,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "untyped": {
+          "tp": 4,
+          "fp": 0,
+          "fn": 572,
+          "support": 576,
+          "precision": 1.0,
+          "recall": 0.006944444444444444,
+          "f1": 0.013793103448275862,
+          "f1_ci": {
+            "point": 0.013793103448275862,
+            "ci_low": 0.0034071550255536627,
+            "ci_high": 0.02777898550724636,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        }
+      },
+      "relations_by_type": {}
+    },
+    "overlap>=0.5/typed": {
+      "status": "not_applicable"
+    },
+    "overlap>=0.5/untyped": {
+      "components": {
+        "tp": 466,
+        "fp": 63,
+        "fn": 110,
+        "support": 576,
+        "precision": 0.8809073724007561,
+        "recall": 0.8090277777777778,
+        "f1": 0.8434389140271494,
+        "f1_ci": {
+          "point": 0.8434389140271493,
+          "ci_low": 0.8103444437620905,
+          "ci_high": 0.8740744120032442,
+          "confidence": 0.95,
+          "iterations": 10000
+        }
+      },
+      "relations": {
+        "tp": 201,
+        "fp": 117,
+        "fn": 263,
+        "support": 464,
+        "precision": 0.6320754716981132,
+        "recall": 0.4331896551724138,
+        "f1": 0.5140664961636828,
+        "f1_ci": {
+          "point": 0.5140664961636828,
+          "ci_low": 0.4603768759349515,
+          "ci_high": 0.5666666666666667,
+          "confidence": 0.95,
+          "iterations": 10000
+        }
+      },
+      "components_by_type": {
+        "Claim": {
+          "tp": 0,
+          "fp": 16,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "MajorClaim": {
+          "tp": 0,
+          "fp": 4,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "Premise": {
+          "tp": 0,
+          "fp": 43,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "untyped": {
+          "tp": 466,
+          "fp": 0,
+          "fn": 110,
+          "support": 576,
+          "precision": 1.0,
+          "recall": 0.8090277777777778,
+          "f1": 0.8944337811900193,
+          "f1_ci": {
+            "point": 0.8944337811900192,
+            "ci_low": 0.8706563706563707,
+            "ci_high": 0.9156398104265403,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        }
+      },
+      "relations_by_type": {}
+    }
+  },
+  "errors": {}
+}

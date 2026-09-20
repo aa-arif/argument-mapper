@@ -76,7 +76,11 @@ ignore = [
 # Types
 # ---------------------------------------------------------------------------
 [tool.pyright]
-include = ["src", "tests", "scripts"]
+include = ["src", "tests"]
+# scripts/gpu/ imports torch, transformers and vllm, which are installed in
+# the Modal container image, not in the local environment. Linting still
+# covers them; type checking cannot without pulling GPU deps onto a laptop.
+exclude = ["scripts/gpu"]
 pythonVersion = "3.11"
 typeCheckingMode = "strict"
 reportMissingTypeStubs = false

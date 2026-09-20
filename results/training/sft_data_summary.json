@@ -1,0 +1,18 @@
+{
+  "train": {
+    "documents": 258,
+    "mean_answer_tokens": 805.9,
+    "max_answer_tokens": 1287,
+    "mean_prompt_tokens": 657.6,
+    "max_prompt_tokens": 949,
+    "max_total_tokens": 2221
+  },
+  "val": {
+    "documents": 64,
+    "mean_answer_tokens": 808.5,
+    "max_answer_tokens": 1149,
+    "mean_prompt_tokens": 660.6,
+    "max_prompt_tokens": 888,
+    "max_total_tokens": 2006
+  }
+}
