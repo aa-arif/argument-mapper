@@ -118,5 +118,4 @@ function ClaimNodeComponent({ data }) {
   );
 }
 
-export const nodeTypes = { claimNode: ClaimNodeComponent };
 export default ClaimNodeComponent;

@@ -24,11 +24,13 @@ checkpoints/
 adapters/
 
 # ---------------------------------------------------------------------------
-# Working documents. Per project convention no markdown is committed at all —
-# PLAN, PROGRESS, DECISIONS, README, GUIDE and RESUME_BULLETS stay local.
-# Measured results are written as .json/.csv under results/, not markdown.
+# Working documents stay local: PLAN, PROGRESS, DECISIONS, GUIDE and
+# RESUME_BULLETS. README.md is the exception - it is the repository's front
+# door and is committed. Measured results are written as .json/.csv under
+# results/, not markdown.
 # ---------------------------------------------------------------------------
 *.md
+!README.md
 
 # ---------------------------------------------------------------------------
 # Caches

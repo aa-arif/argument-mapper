@@ -48,6 +48,9 @@ packages = ["src/argmap"]
 line-length = 100
 target-version = "py311"
 src = ["src", "tests", "scripts"]
+# server.py is the untouched v1 backend. It is replaced by the Extractor
+# interface in milestone 2; linting it now would only produce noise.
+exclude = ["server.py"]
 
 [tool.ruff.lint]
 select = [

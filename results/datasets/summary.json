@@ -1,0 +1,53 @@
+{
+  "aae-v2": {
+    "documents": 402,
+    "by_split": {
+      "test": 80,
+      "train": 258,
+      "val": 64
+    },
+    "components": 6089,
+    "components_by_type": {
+      "Claim": 1506,
+      "MajorClaim": 751,
+      "Premise": 3832
+    },
+    "relations": 3832,
+    "relations_by_type": {
+      "attacks": 219,
+      "supports": 3613
+    },
+    "stance": {
+      "Against": 278,
+      "For": 1228
+    },
+    "typed_components": true,
+    "mean_chars": 1974.1,
+    "max_chars": 2847,
+    "sha256": "7d592ccdebfcce580b2d3d9bb53c93da691cbb3ac2741e8d403a7d1599e60de7",
+    "val_fraction": 0.2,
+    "val_seed": 13
+  },
+  "microtexts-en": {
+    "documents": 112,
+    "by_split": {
+      "test": 112
+    },
+    "components": 576,
+    "components_by_type": {
+      "untyped": 576
+    },
+    "relations": 464,
+    "relations_by_type": {
+      "attacks": 174,
+      "supports": 290
+    },
+    "stance": {},
+    "typed_components": false,
+    "mean_chars": 422.6,
+    "max_chars": 730,
+    "sha256": "79e01c1f866ef77f4f91c8e52be77b4ac64d336fd5a6ae6dec1c8d89c8eaad4b",
+    "undercuts_flattened": 63,
+    "linked_premises_flattened": 21
+  }
+}

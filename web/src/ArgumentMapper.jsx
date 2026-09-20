@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from "react";
-import { typeColors, typeLabels, relColors, relIcons } from "./constants";
+import { typeColors, relColors, relIcons } from "./constants";
 import Graph from "./components/Graph";
 import HighlightedText from "./components/HighlightedText";
 import TextInputPanel from "./components/TextInputPanel";

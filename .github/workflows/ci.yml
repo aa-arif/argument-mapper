@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main, v2]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Every job runs on CPU against synthetic fixtures. The real corpora are
+  # licensed and never present in CI, and no job may spend money on an API.
+  ARGMAP_SPEND_CAP_USD: "0"
+
+jobs:
+  lint-types-tests:
+    name: Lint, types, tests (CPU)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install
+        run: uv sync --extra dev
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format
+        run: uv run ruff format --check .
+
+      - name: Pyright
+        run: uv run pyright
+
+      - name: Tests
+        # `corpus`, `gpu` and `api` marked tests need data, hardware or money
+        # that CI deliberately does not have.
+        run: uv run pytest -m "not corpus and not gpu and not api"
+
+  no-corpus-committed:
+    name: No licensed corpus data committed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Fail if corpus files are tracked
+        run: |
+          set -euo pipefail
+          offenders=$(git ls-files \
+            | grep -Ei '(^data/|\.ann$|argumentannotatedessays|brat-project|arg-microtexts)' \
+            || true)
+          if [ -n "$offenders" ]; then
+            echo "::error::Licensed corpus files are tracked by git:"
+            echo "$offenders"
+            echo
+            echo "Argument Annotated Essays v2 may not be redistributed (license clause 2.2)"
+            echo "and this repository is public. Remove these files from git history."
+            exit 1
+          fi
+          echo "No corpus files tracked."
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build

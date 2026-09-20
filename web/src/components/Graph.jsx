@@ -9,7 +9,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 import dagre from "@dagrejs/dagre";
 import { typeColors, relColors, relIcons, NODE_WIDTH, NODE_HEIGHT } from "../constants";
-import { nodeTypes } from "./ClaimNode";
+import { nodeTypes } from "./nodeTypes";
 
 function getLayoutedNodes(claims, relationships) {
   const g = new dagre.graphlib.Graph();
