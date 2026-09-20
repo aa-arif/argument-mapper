@@ -1,0 +1,9 @@
+# Normalize line endings so CI on Linux and development on Windows agree.
+* text=auto eol=lf
+
+# Binary / generated
+*.png binary
+*.jpg binary
+*.pdf binary
+*.zip binary
+web/package-lock.json linguist-generated=true

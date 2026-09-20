@@ -1,0 +1,72 @@
+# ---------------------------------------------------------------------------
+# Corpora. Never commit these.
+#
+# Argument Annotated Essays v2 is licensed under a TU Darmstadt / UKP agreement
+# whose clause 2.2 forbids publishing, redistributing, or displaying the data in
+# any form. This repository is public. arg-microtexts is CC BY-NC-SA 4.0.
+# A CI job re-checks this; see .github/workflows/ci.yml.
+# ---------------------------------------------------------------------------
+# Anchored to the repo root so it does not also match src/argmap/data/
+/data/
+*.ann
+brat-project-final*
+ArgumentAnnotatedEssays*
+arg-microtexts*
+
+# Generated few-shot exemplars contain corpus excerpts
+prompts/exemplars*.json
+
+# Model weights and adapters (plausibly derivative of the corpus)
+*.safetensors
+*.bin
+*.gguf
+checkpoints/
+adapters/
+
+# ---------------------------------------------------------------------------
+# Working documents. Per project convention no markdown is committed at all —
+# PLAN, PROGRESS, DECISIONS, README, GUIDE and RESUME_BULLETS stay local.
+# Measured results are written as .json/.csv under results/, not markdown.
+# ---------------------------------------------------------------------------
+*.md
+
+# ---------------------------------------------------------------------------
+# Caches
+# ---------------------------------------------------------------------------
+.cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.pyright/
+htmlcov/
+.coverage
+*.egg-info/
+dist/
+build/
+
+# ---------------------------------------------------------------------------
+# Environments
+# ---------------------------------------------------------------------------
+.venv/
+venv/
+.env
+.env.local
+
+# ---------------------------------------------------------------------------
+# Node / frontend
+# ---------------------------------------------------------------------------
+node_modules/
+web/dist/
+web/dist-ssr/
+*.local
+
+# ---------------------------------------------------------------------------
+# Editors / OS
+# ---------------------------------------------------------------------------
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
