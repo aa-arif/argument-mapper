@@ -24,9 +24,9 @@ SEEDS = (0, 1, 2)
 EPOCHS = (1, 2, 3)
 
 
-def _adapter_paths(base_model: str) -> list[str]:
-    stem = f"{MODELS_DIR}/adapters/{base_model.replace('/', '__')}"
-    return [f"{stem}/seed{seed}/epoch{epoch}" for seed in SEEDS for epoch in EPOCHS]
+def _adapter_paths(base_model: str, run_tag: str, epochs: tuple[int, ...]) -> list[str]:
+    stem = f"{MODELS_DIR}/adapters/{base_model.replace('/', '__')}/{run_tag}"
+    return [f"{stem}/seed{seed}/epoch{epoch}" for seed in SEEDS for epoch in epochs]
 
 
 @app.local_entrypoint()
@@ -34,21 +34,36 @@ def main(
     base_model: str = BASE_MODEL,
     split: str = "val",
     out_name: str = "val_checkpoints",
+    constrained: bool = True,
+    run_tag: str = "e10",
+    epochs: str = "4,6,8,10",
 ) -> None:
+    """Generate validation predictions for every checkpoint.
+
+    `constrained` defaults to true because it matches how the local route
+    actually runs in production, and because the Claude baseline it is compared
+    against uses the API's structured outputs. Evaluating one side with format
+    enforcement and the other without would measure the enforcement, not the
+    models. The unconstrained run is milestone 4's ablation, not the baseline.
+    """
     from argmap.cli.run_baseline import load_split
+    from argmap.prompts import bounded_graph_schema
     from argmap.train_data import to_messages
 
     root = pathlib.Path(__file__).resolve().parents[2]
     docs = load_split(root, "aae-v2", split)
     prompts = [{"doc_id": d.doc_id, "messages": to_messages(d, include_answer=False)} for d in docs]
 
-    adapters = _adapter_paths(base_model)
-    print(f"{len(prompts)} {split} documents x {len(adapters)} checkpoints")
+    epoch_list = tuple(int(e) for e in epochs.split(",") if e.strip())
+    adapters = _adapter_paths(base_model, run_tag, epoch_list)
+    mode = "constrained" if constrained else "unconstrained"
+    print(f"{len(prompts)} {split} documents x {len(adapters)} checkpoints ({mode})")
 
     payload = generate.remote(
         model_path=base_model,
         prompts=prompts,
         adapters=adapters,
+        json_schema=bounded_graph_schema() if constrained else None,
     )
 
     out = root / "data" / "generations" / f"{out_name}.json"

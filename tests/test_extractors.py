@@ -222,3 +222,48 @@ def test_exemplar_selection_is_deterministic(gold_doc: Document) -> None:
     assert [d.doc_id for d in select_exemplars(docs, k=2)] == [
         d.doc_id for d in select_exemplars(docs, k=2)
     ]
+
+
+# ---------------------------------------------------------------------------
+# Constrained-decoding schema
+# ---------------------------------------------------------------------------
+
+
+def test_bounded_schema_adds_array_limits() -> None:
+    """Constrained decoding guarantees syntax, not termination.
+
+    A model emitting non-unique component ids can generate relations between
+    them forever and stay schema-valid, so generation only stops at the token
+    cap -- producing truncated JSON that looks like a constraint failure.
+    `maxItems` makes termination something the grammar enforces.
+    """
+    from argmap.prompts import MAX_COMPONENTS, MAX_RELATIONS, bounded_graph_schema
+
+    schema = bounded_graph_schema()
+    assert schema["properties"]["components"]["maxItems"] == MAX_COMPONENTS
+    assert schema["properties"]["relations"]["maxItems"] == MAX_RELATIONS
+
+
+def test_bounded_schema_leaves_the_model_schema_untouched() -> None:
+    """The Claude route's cache key covers its schema.
+
+    Mutating `RawGraph` in place would invalidate every cached API response and
+    re-spend the budget for a change only the local route needs.
+    """
+    import json as _json
+
+    from argmap.prompts import RawGraph, bounded_graph_schema
+
+    bounded_graph_schema()
+    assert "maxItems" not in _json.dumps(RawGraph.model_json_schema())
+
+
+def test_bounded_schema_limits_exceed_the_corpus() -> None:
+    """Bounds must constrain runaway output only, never a real document.
+
+    The densest AAE essay has 28 components and 20 relations.
+    """
+    from argmap.prompts import MAX_COMPONENTS, MAX_RELATIONS
+
+    assert MAX_COMPONENTS > 28
+    assert MAX_RELATIONS > 20

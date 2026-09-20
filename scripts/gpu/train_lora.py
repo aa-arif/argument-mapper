@@ -84,6 +84,7 @@ def train(
     base_model: str,
     seed: int,
     hp: dict[str, object] | None = None,
+    run_tag: str = "e3",
 ) -> dict[str, object]:
     """Fine-tune one seed, saving one adapter per epoch."""
     import time
@@ -133,7 +134,9 @@ def train(
 
     train_ds, val_ds = _load(train_jsonl), _load(val_jsonl)
 
-    out_root = f"{MODELS_DIR}/adapters/{base_model.replace('/', '__')}/seed{seed}"
+    # Tagged so a re-run with different hyperparameters cannot overwrite the
+    # adapters an earlier run's numbers were measured from.
+    out_root = f"{MODELS_DIR}/adapters/{base_model.replace('/', '__')}/{run_tag}/seed{seed}"
     Path(out_root).mkdir(parents=True, exist_ok=True)
 
     per_epoch: list[dict[str, object]] = []
@@ -209,6 +212,7 @@ def train(
 
     return {
         "base_model": base_model,
+        "run_tag": run_tag,
         "seed": seed,
         "hyperparameters": settings,
         "trainable_parameters": trainable,
@@ -256,7 +260,9 @@ def merge_adapter(base_model: str, adapter_path: str, out_name: str) -> str:
 def main(
     base_model: str = "Qwen/Qwen3.5-2B",
     seeds: str = "0,1,2",
-    epochs: int = 3,
+    epochs: int = 10,
+    learning_rate: float = 2e-4,
+    run_tag: str = "e10",
 ) -> None:
     """Train one adapter per seed and record what each run produced.
 
@@ -271,10 +277,15 @@ def main(
     val_blob = (root / "data" / "sft" / "val.jsonl").read_text(encoding="utf-8")
 
     seed_list = [int(s) for s in seeds.split(",") if s.strip()]
-    hp = {"epochs": epochs}
+    # 3 epochs over 258 examples is only ~99 optimizer steps, which was not
+    # enough to move the model off the base checkpoint's prose-formatting
+    # prior: it produced correct content in Markdown, and under constrained
+    # decoding emitted generic component ids and looped. More steps and a
+    # higher learning rate target exactly that. See DECISIONS D23.
+    hp = {"epochs": epochs, "learning_rate": learning_rate}
 
     results = list(
-        train.starmap([(train_blob, val_blob, base_model, seed, hp) for seed in seed_list])
+        train.starmap([(train_blob, val_blob, base_model, seed, hp, run_tag) for seed in seed_list])
     )
 
     out = root / "results" / "training" / "runs.json"

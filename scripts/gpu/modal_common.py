@@ -68,6 +68,15 @@ TRAIN_IMAGE = (
     .add_local_python_source("modal_common")
 )
 
+#: Where pip's CUDA wheels put the toolkit. vLLM's flashinfer backend
+#: JIT-compiles kernels at engine start and looks for nvcc under `$CUDA_HOME`,
+#: `$CUDA_PATH` or `/usr/local/cuda` -- none of which exist on a slim image.
+#: The toolkit *is* installed, in a consolidated layout carrying both `bin/nvcc`
+#: and `include/`, so pointing CUDA_HOME at it is enough. Without this the
+#: engine dies with "Could not find nvcc" *after* loading the model, which
+#: reads like a GPU problem and is not. Located by scripts/gpu/probe_cuda.py.
+_CUDA_HOME = "/usr/local/lib/python3.11/site-packages/nvidia/cu13"
+
 #: Serving with JSON-schema constrained decoding (milestones 4 and 6).
 SERVE_IMAGE = (
     modal.Image.debian_slim(python_version="3.11")
@@ -76,7 +85,20 @@ SERVE_IMAGE = (
         "hf-transfer==0.1.9",
         "pydantic==2.13.5",
     )
-    .env(_COMMON_ENV)
+    .env(
+        {
+            **_COMMON_ENV,
+            "CUDA_HOME": _CUDA_HOME,
+            "CUDA_PATH": _CUDA_HOME,
+            # flashinfer ships its own CCCL headers, which do not match the
+            # nvcc in pip's CUDA wheels: its sampling kernels fail to JIT with
+            # "CUDA compiler and CUDA toolkit headers are incompatible". Only
+            # the sampler is affected, and this project decodes greedily, so
+            # the PyTorch-native sampler is equivalent here. Throughput
+            # measured in milestone 6 must say which sampler was used.
+            "VLLM_USE_FLASHINFER_SAMPLER": "0",
+        }
+    )
     .add_local_python_source("modal_common")
 )
 

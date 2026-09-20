@@ -21,7 +21,7 @@ import json
 import random
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal, cast
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -265,3 +265,41 @@ def prompt_fingerprint(exemplars: Sequence[dict[str, object]]) -> str:
     )
     digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
     return f"{PROMPT_VERSION}-{digest}"
+
+
+#: Generous bounds taken from the corpus: the densest essay has 28 components
+#: and 20 relations. Doubling that leaves ample headroom while still forcing a
+#: grammar that must terminate.
+MAX_COMPONENTS = 60
+MAX_RELATIONS = 60
+
+
+def bounded_graph_schema(
+    max_components: int = MAX_COMPONENTS,
+    max_relations: int = MAX_RELATIONS,
+) -> dict[str, Any]:
+    """`RawGraph`'s schema with array bounds, for constrained decoding.
+
+    Constrained decoding enforces *syntax*, not termination. An undertrained
+    model that emits the same generic component id for every component will
+    happily generate relations between them forever: every continuation stays
+    schema-valid, so the grammar never forces a closing bracket, and generation
+    only stops when it hits the token limit -- producing truncated, unparseable
+    JSON that looks like a constraint failure and is not.
+
+    Bounding the arrays makes termination a property of the grammar.
+
+    Kept separate from `RawGraph.model_json_schema()` on purpose: the Claude
+    route's cache key covers its schema, so editing the model in place would
+    invalidate every cached API response and re-spend the budget for a change
+    that route does not need.
+    """
+    schema: dict[str, Any] = RawGraph.model_json_schema()
+    properties = schema.get("properties")
+    if isinstance(properties, dict):
+        bounds = {"components": max_components, "relations": max_relations}
+        for name, limit in bounds.items():
+            field = cast("dict[str, Any]", properties).get(name)
+            if isinstance(field, dict):
+                cast("dict[str, Any]", field)["maxItems"] = limit
+    return schema
