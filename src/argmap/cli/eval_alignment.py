@@ -66,13 +66,37 @@ def _truncated(text: str) -> str:
     return " ".join(words[:keep])
 
 
+def _reworded(text: str) -> str:
+    """Drop every 7th interior token, so the result is no longer a substring.
+
+    This is the condition that actually exercises fuzzy matching. `trimmed` and
+    `truncated_80pct` only remove tokens from the ends, which leaves a
+    contiguous substring of the source that plain `str.find` still locates
+    exactly -- they measure substring search, not alignment. Deleting interior
+    tokens breaks that, while leaving the true span essentially where the gold
+    span is, which is what a paraphrasing model produces.
+    """
+    words = text.split()
+    if len(words) < 8:
+        return text
+    kept = [w for i, w in enumerate(words) if i == 0 or i == len(words) - 1 or i % 7 != 0]
+    return " ".join(kept)
+
+
 CONDITIONS: dict[str, Perturbation] = {
     "verbatim": _verbatim,
     "whitespace_collapsed": _whitespace_collapsed,
     "lowercased": _lowercased,
     "trimmed": _trimmed,
     "truncated_80pct": _truncated,
+    "reworded": _reworded,
 }
+
+#: Conditions where the gold span is still the correct answer, so deviation
+#: from it is genuine alignment error. Under `trimmed` and `truncated_80pct`
+#: the perturbed text's true span really is different, so a non-zero offset
+#: there is the matcher working, not failing.
+EXACT_SPAN_IS_MEANINGFUL = ("verbatim", "whitespace_collapsed", "lowercased", "reworded")
 
 
 def _percentile(values: Sequence[float], q: float) -> float:
@@ -128,6 +152,7 @@ def measure(
     return {
         "condition": condition,
         "refined": refine,
+        "exact_span_meaningful": condition in EXACT_SPAN_IS_MEANINGFUL,
         "components": total,
         "exact_span_rate": exact_hits / total if total else 0.0,
         "located_rate": located / total if total else 0.0,

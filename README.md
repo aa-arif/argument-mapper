@@ -97,9 +97,41 @@ Two properties of this data shape every result that follows:
 A model that emits component *text* has not said where that text is. Aligning
 it back to a span introduces error that is charged to the extractor, so it caps
 achievable F1. Measured by aligning **gold** component text against **gold**
-documents, where the right answer is known:
+documents, where the right answer is known exactly — 144 AAE documents (val +
+test), 2,232 components. Full output in
+[`results/alignment/alignment_error.json`](results/alignment/alignment_error.json).
 
-`TBD` — see `results/alignment/alignment_error.json`
+| Condition | Exact span | Exact span (refined) | ≥50% overlap |
+|---|---|---|---|
+| verbatim | 0.998 | 0.998 | 0.998 |
+| whitespace collapsed | 0.998 | 0.998 | 0.998 |
+| lowercased | 0.598 | **0.950** | 0.997 |
+| reworded (interior tokens dropped) | 0.167 | **0.780** | 0.992 |
+
+Nothing failed to align in any condition (failure rate 0.000 throughout).
+arg-microtexts behaves the same or slightly better (reworded: 0.167 → 0.781,
+≥50% overlap 1.000).
+
+Three things follow, and they shape how every later result should be read:
+
+1. **Under overlap matching, alignment is not a meaningful ceiling.** Even when
+   the text is reworded so that substring search cannot find it, 99.2% of
+   components still land within the ≥50% criterion. Overlap-based F1 measures
+   extraction, not alignment.
+2. **Exact-span F1 largely measures verbatim copying.** It falls from 0.998 to
+   0.167 purely from perturbing the text, with no change in extraction quality
+   whatsoever. A model that paraphrases correctly is punished as hard as one
+   that is wrong. Exact-span numbers are reported for comparability, but
+   overlap is the headline.
+3. **The refinement pass is worth 4.7×** on paraphrased text (0.167 → 0.780).
+   The v1 matcher slides its window in quarter-window steps, so it can only
+   land on the true boundary by luck; the hill-climb fixes that.
+
+Two conditions in the JSON — `trimmed` and `truncated_80pct` — are flagged
+`exact_span_meaningful: false`. Removing tokens only from the ends leaves a
+contiguous substring that `str.find` still locates, so they exercise substring
+search rather than alignment, and their true span genuinely differs from the
+gold span. They are kept as a degradation check, not read as error.
 
 ### Extraction quality
 
