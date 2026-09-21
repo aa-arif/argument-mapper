@@ -1,0 +1,26 @@
+{
+  "adapter": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed0/epoch10",
+  "renamed_adapter": "/models/adapters-renamed/Qwen__Qwen3.5-2B__e10__seed0__epoch10",
+  "rewrite": {
+    "tensors": 192,
+    "renamed": 192,
+    "path": "/models/adapters-renamed/Qwen__Qwen3.5-2B__e10__seed0__epoch10"
+  },
+  "runs": [
+    {
+      "label": "base",
+      "documents": 6,
+      "valid_json": 0
+    },
+    {
+      "label": "original_names",
+      "documents": 6,
+      "valid_json": 0
+    },
+    {
+      "label": "renamed",
+      "documents": 6,
+      "valid_json": 6
+    }
+  ]
+}

@@ -1,0 +1,228 @@
+{
+  "adapter": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed0/epoch10",
+  "summary": {
+    "base": {
+      "n": 6,
+      "json": 0,
+      "brace": 0
+    },
+    "peft": {
+      "n": 6,
+      "json": 6,
+      "brace": 6
+    },
+    "merged": {
+      "n": 2,
+      "json": 2,
+      "brace": 2
+    },
+    "_effect": {
+      "documents": 6,
+      "identical_base_vs_peft": 0
+    }
+  },
+  "results": [
+    {
+      "doc_id": "essay001",
+      "which": "base",
+      "chars": 2334,
+      "lines": 49,
+      "sha256_16": "d0af2b8bd4216efe",
+      "starts_with_brace": false,
+      "markdown_heading_lines": 2,
+      "bullet_lines": 0,
+      "parses": false
+    },
+    {
+      "doc_id": "essay002",
+      "which": "base",
+      "chars": 3879,
+      "lines": 85,
+      "sha256_16": "21b759233c59351a",
+      "starts_with_brace": false,
+      "markdown_heading_lines": 3,
+      "bullet_lines": 31,
+      "parses": false
+    },
+    {
+      "doc_id": "essay007",
+      "which": "base",
+      "chars": 2500,
+      "lines": 49,
+      "sha256_16": "c5c2bc4052cf3937",
+      "starts_with_brace": false,
+      "markdown_heading_lines": 2,
+      "bullet_lines": 0,
+      "parses": false
+    },
+    {
+      "doc_id": "essay008",
+      "which": "base",
+      "chars": 3392,
+      "lines": 67,
+      "sha256_16": "3a74a83531a78974",
+      "starts_with_brace": false,
+      "markdown_heading_lines": 3,
+      "bullet_lines": 21,
+      "parses": false
+    },
+    {
+      "doc_id": "essay009",
+      "which": "base",
+      "chars": 1268,
+      "lines": 38,
+      "sha256_16": "db74c607ab75ace4",
+      "starts_with_brace": false,
+      "markdown_heading_lines": 13,
+      "bullet_lines": 13,
+      "parses": false
+    },
+    {
+      "doc_id": "essay010",
+      "which": "base",
+      "chars": 4594,
+      "lines": 129,
+      "sha256_16": "d1f854015107118a",
+      "starts_with_brace": false,
+      "markdown_heading_lines": 2,
+      "bullet_lines": 42,
+      "parses": false
+    },
+    {
+      "doc_id": "essay001",
+      "which": "peft",
+      "chars": 2252,
+      "lines": 1,
+      "sha256_16": "3e4a3e24efe6c651",
+      "starts_with_brace": true,
+      "markdown_heading_lines": 0,
+      "bullet_lines": 0,
+      "parses": true,
+      "top_level_keys": [
+        "components",
+        "relations"
+      ],
+      "n_components": 12,
+      "n_relations": 8
+    },
+    {
+      "doc_id": "essay002",
+      "which": "peft",
+      "chars": 2487,
+      "lines": 1,
+      "sha256_16": "58ed12527059885f",
+      "starts_with_brace": true,
+      "markdown_heading_lines": 0,
+      "bullet_lines": 0,
+      "parses": true,
+      "top_level_keys": [
+        "components",
+        "relations"
+      ],
+      "n_components": 14,
+      "n_relations": 9
+    },
+    {
+      "doc_id": "essay007",
+      "which": "peft",
+      "chars": 2241,
+      "lines": 1,
+      "sha256_16": "c084584781a0ebd9",
+      "starts_with_brace": true,
+      "markdown_heading_lines": 0,
+      "bullet_lines": 0,
+      "parses": true,
+      "top_level_keys": [
+        "components",
+        "relations"
+      ],
+      "n_components": 12,
+      "n_relations": 8
+    },
+    {
+      "doc_id": "essay008",
+      "which": "peft",
+      "chars": 2247,
+      "lines": 1,
+      "sha256_16": "f6dd7b9cec3d769b",
+      "starts_with_brace": true,
+      "markdown_heading_lines": 0,
+      "bullet_lines": 0,
+      "parses": true,
+      "top_level_keys": [
+        "components",
+        "relations"
+      ],
+      "n_components": 13,
+      "n_relations": 7
+    },
+    {
+      "doc_id": "essay009",
+      "which": "peft",
+      "chars": 2280,
+      "lines": 1,
+      "sha256_16": "62a994a1081f8913",
+      "starts_with_brace": true,
+      "markdown_heading_lines": 0,
+      "bullet_lines": 0,
+      "parses": true,
+      "top_level_keys": [
+        "components",
+        "relations"
+      ],
+      "n_components": 16,
+      "n_relations": 9
+    },
+    {
+      "doc_id": "essay010",
+      "which": "peft",
+      "chars": 2612,
+      "lines": 1,
+      "sha256_16": "38a136870c6583b7",
+      "starts_with_brace": true,
+      "markdown_heading_lines": 0,
+      "bullet_lines": 0,
+      "parses": true,
+      "top_level_keys": [
+        "components",
+        "relations"
+      ],
+      "n_components": 17,
+      "n_relations": 9
+    },
+    {
+      "doc_id": "essay001",
+      "which": "merged",
+      "chars": 2252,
+      "lines": 1,
+      "sha256_16": "3e4a3e24efe6c651",
+      "starts_with_brace": true,
+      "markdown_heading_lines": 0,
+      "bullet_lines": 0,
+      "parses": true,
+      "top_level_keys": [
+        "components",
+        "relations"
+      ],
+      "n_components": 12,
+      "n_relations": 8
+    },
+    {
+      "doc_id": "essay002",
+      "which": "merged",
+      "chars": 2487,
+      "lines": 1,
+      "sha256_16": "58ed12527059885f",
+      "starts_with_brace": true,
+      "markdown_heading_lines": 0,
+      "bullet_lines": 0,
+      "parses": true,
+      "top_level_keys": [
+        "components",
+        "relations"
+      ],
+      "n_components": 14,
+      "n_relations": 9
+    }
+  ]
+}
