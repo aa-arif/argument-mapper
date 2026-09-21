@@ -31,7 +31,10 @@ jobs:
         run: uv python install 3.11
 
       - name: Install
-        run: uv sync --extra dev
+        # api and serve extras are needed to *type check* and to import the
+        # serving tests, not to call anything: no key is set, so nothing
+        # here can reach the network or spend money.
+        run: uv sync --extra dev --extra api --extra serve
 
       - name: Ruff lint
         run: uv run ruff check .
