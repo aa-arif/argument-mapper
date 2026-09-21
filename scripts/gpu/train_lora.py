@@ -304,3 +304,22 @@ def main(
             f"{r['trainable_parameters'] / 1e6:.1f}M trainable "
             f"({r['trainable_fraction'] * 100:.2f}%), eval_loss per epoch = {losses}"
         )
+
+
+@app.local_entrypoint()
+def merge(
+    base_model: str = "Qwen/Qwen3.5-2B",
+    adapter: str = "Qwen__Qwen3.5-2B/e10/seed0/epoch10",
+    out_name: str = "e10-seed0-epoch10",
+) -> None:
+    """Merge an adapter into the base weights for serving.
+
+    vLLM's dynamic LoRA path silently produced base-model output for this
+    architecture -- transformers+PEFT emits the trained JSON format on 6/6
+    training documents while vLLM emits none. Merging sidesteps the adapter
+    machinery entirely: the served model is just a model.
+    """
+    adapter_path = adapter if adapter.startswith(MODELS_DIR) else f"{MODELS_DIR}/adapters/{adapter}"
+    print(f"merging {adapter_path}")
+    out = merge_adapter.remote(base_model=base_model, adapter_path=adapter_path, out_name=out_name)
+    print(f"merged -> {out}")

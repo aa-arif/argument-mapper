@@ -36,6 +36,7 @@ def main(
     constrained: bool = True,
     run_tag: str = "e10",
     epochs: str = "4,6,8,10",
+    merged: str = "",
 ) -> None:
     """Generate validation predictions for every checkpoint.
 
@@ -53,10 +54,19 @@ def main(
     docs = load_split(root, "aae-v2", split)
     prompts = [{"doc_id": d.doc_id, "messages": to_messages(d, include_answer=False)} for d in docs]
 
-    epoch_list = tuple(int(e) for e in epochs.split(",") if e.strip())
-    adapters = _adapter_paths(base_model, run_tag, epoch_list)
+    # A merged checkpoint is served as a plain model: vLLM's dynamic LoRA
+    # path silently produced base-model output for this architecture, so
+    # merging is how the adapter actually reaches inference.
+    if merged:
+        model_path = merged if merged.startswith(MODELS_DIR) else f"{MODELS_DIR}/merged/{merged}"
+        adapters: list[str] = []
+    else:
+        model_path = base_model
+        epoch_list = tuple(int(e) for e in epochs.split(",") if e.strip())
+        adapters = _adapter_paths(base_model, run_tag, epoch_list)
     mode = "constrained" if constrained else "unconstrained"
-    print(f"{len(prompts)} {split} documents x {len(adapters)} checkpoints ({mode})")
+    label = merged or f"{len(adapters)} checkpoints"
+    print(f"{len(prompts)} {split} documents x {label} ({mode})")
 
     # Written to the volume rather than returned. A dozen checkpoints of
     # generated text is several megabytes, which is enough to drop the gRPC
@@ -64,9 +74,9 @@ def main(
     # work has already succeeded, wasting the whole run on transport.
     remote_name = f"generations/{out_name}.json"
     summary = generate.remote(
-        model_path=base_model,
+        model_path=model_path,
         prompts=prompts,
-        adapters=adapters,
+        adapters=adapters or None,
         json_schema=bounded_graph_schema() if constrained else None,
         out_path=f"{MODELS_DIR}/{remote_name}",
     )

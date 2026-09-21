@@ -26,11 +26,12 @@ BASE_MODEL = "Qwen/Qwen3.5-2B"
 
 @app.local_entrypoint()
 def main(
-    adapter: str,  # volume-relative, e.g. e10/seed0/epoch10
+    adapter: str = "",  # volume-relative adapter, or use --merged
     base_model: str = BASE_MODEL,
     corpus: str = "aae-v2",
     split: str = "test",
     out_name: str = "",
+    merged: str = "",
 ) -> None:
     from argmap.cli.run_baseline import load_split
     from argmap.prompts import bounded_graph_schema
@@ -41,13 +42,25 @@ def main(
     # vLLM then tried to resolve as a Hugging Face repo id. Taking the
     # adapter path relative to the volume removes the leading slash and the
     # whole failure mode with it.
-    adapter_path = adapter if adapter.startswith(MODELS_DIR) else f"{MODELS_DIR}/adapters/{adapter}"
+    # A merged checkpoint is served as a plain model. vLLM's dynamic LoRA
+    # path silently produced base-model output for this architecture, so
+    # merging is how the fine-tune actually reaches inference.
+    if merged:
+        model_path = merged if merged.startswith(MODELS_DIR) else f"{MODELS_DIR}/merged/{merged}"
+        adapter_list = None
+        label = model_path
+    else:
+        model_path = base_model
+        adapter_list = [
+            adapter if adapter.startswith(MODELS_DIR) else f"{MODELS_DIR}/adapters/{adapter}"
+        ]
+        label = adapter_list[0]
 
     root = pathlib.Path(__file__).resolve().parents[2]
     docs = load_split(root, corpus, split)
     prompts = [{"doc_id": d.doc_id, "messages": to_messages(d, include_answer=False)} for d in docs]
     print(f"{len(prompts)} {corpus}/{split} documents, constrained and unconstrained")
-    print(f"adapter: {adapter_path}")
+    print(f"serving: {label}")
 
     out_dir = root / "data" / "generations"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -60,9 +73,9 @@ def main(
         # work has already succeeded.
         remote_name = f"generations/{stem}_{suffix}.json"
         summary = generate.remote(
-            model_path=base_model,
+            model_path=model_path,
             prompts=prompts,
-            adapters=[adapter_path],
+            adapters=adapter_list,
             json_schema=bounded_graph_schema() if constrained else None,
             out_path=f"{MODELS_DIR}/{remote_name}",
         )
