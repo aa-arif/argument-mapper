@@ -1,0 +1,115 @@
+{
+  "a": "qwen3.5-2b-lora",
+  "b": "claude-haiku-4-5",
+  "corpus": "microtexts-en",
+  "split": "test",
+  "documents": 112,
+  "comparisons": {
+    "exact/typed": {
+      "status": "not_applicable"
+    },
+    "exact/untyped": {
+      "components": {
+        "a": {
+          "point": 0.006993006993006993,
+          "ci_low": 0.0014044943820224719,
+          "ci_high": 0.013614987305138902,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "b": {
+          "point": 0.007239819004524887,
+          "ci_low": 0.0017574692442882249,
+          "ci_high": 0.01477411790006195,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "delta": {
+          "point": -0.0002468120115178942,
+          "ci_low": -0.008950120614812844,
+          "ci_high": 0.008048272418842933,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "significant": false
+      },
+      "relations": {
+        "a": {
+          "point": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "b": {
+          "point": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "delta": {
+          "point": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "significant": false
+      }
+    },
+    "overlap>=0.5/typed": {
+      "status": "not_applicable"
+    },
+    "overlap>=0.5/untyped": {
+      "components": {
+        "a": {
+          "point": 0.6573426573426573,
+          "ci_low": 0.6042884990253411,
+          "ci_high": 0.7086515006952663,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "b": {
+          "point": 0.8434389140271493,
+          "ci_low": 0.8103444437620905,
+          "ci_high": 0.8740744120032442,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "delta": {
+          "point": -0.18609625668449203,
+          "ci_low": -0.24129037422212712,
+          "ci_high": -0.131974798302226,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "significant": true
+      },
+      "relations": {
+        "a": {
+          "point": 0.07847800237812129,
+          "ci_low": 0.05066009591256344,
+          "ci_high": 0.10927573062261753,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "b": {
+          "point": 0.5140664961636828,
+          "ci_low": 0.4603768759349515,
+          "ci_high": 0.5666666666666667,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "delta": {
+          "point": -0.4355884937855615,
+          "ci_low": -0.4977444043285573,
+          "ci_high": -0.372169617284733,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "significant": true
+      }
+    }
+  }
+}

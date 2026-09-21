@@ -1,0 +1,115 @@
+{
+  "a": "qwen3.5-2b-lora",
+  "b": "claude-sonnet-5",
+  "corpus": "microtexts-en",
+  "split": "test",
+  "documents": 112,
+  "comparisons": {
+    "exact/typed": {
+      "status": "not_applicable"
+    },
+    "exact/untyped": {
+      "components": {
+        "a": {
+          "point": 0.006993006993006993,
+          "ci_low": 0.0014044943820224719,
+          "ci_high": 0.013614987305138902,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "b": {
+          "point": 0.025022341376228777,
+          "ci_low": 0.01064773735581189,
+          "ci_high": 0.04285714285714286,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "delta": {
+          "point": -0.018029334383221785,
+          "ci_low": -0.03651330619833649,
+          "ci_high": -0.002916802096227744,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "significant": true
+      },
+      "relations": {
+        "a": {
+          "point": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "b": {
+          "point": 0.00922722029988466,
+          "ci_low": 0.0,
+          "ci_high": 0.021301775147928994,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "delta": {
+          "point": -0.00922722029988466,
+          "ci_low": -0.021301775147928994,
+          "ci_high": 0.0,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "significant": false
+      }
+    },
+    "overlap>=0.5/typed": {
+      "status": "not_applicable"
+    },
+    "overlap>=0.5/untyped": {
+      "components": {
+        "a": {
+          "point": 0.6573426573426573,
+          "ci_low": 0.6042884990253411,
+          "ci_high": 0.7086515006952663,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "b": {
+          "point": 0.9454870420017873,
+          "ci_low": 0.9304424413809356,
+          "ci_high": 0.9597135183527306,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "delta": {
+          "point": -0.28814438465913006,
+          "ci_low": -0.34174296687829353,
+          "ci_high": -0.23753083734082753,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "significant": true
+      },
+      "relations": {
+        "a": {
+          "point": 0.07847800237812129,
+          "ci_low": 0.05066009591256344,
+          "ci_high": 0.10927573062261753,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "b": {
+          "point": 0.6758938869665513,
+          "ci_low": 0.6262608225108226,
+          "ci_high": 0.7251738685051127,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "delta": {
+          "point": -0.59741588458843,
+          "ci_low": -0.6507755676953333,
+          "ci_high": -0.5422834693726609,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "significant": true
+      }
+    }
+  }
+}

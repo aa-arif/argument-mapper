@@ -40,6 +40,17 @@ from argmap.schema import Document, Prediction
 #: types, the same scalar checkpoint selection used.
 CRITERION = MatchCriterion(span="overlap", typed=True)
 
+#: arg-microtexts has no component type labels, so a typed criterion there
+#: scores every match as wrong and reports a number that means nothing. The
+#: sweep and the report can therefore run under different criteria, and both
+#: labels are recorded in the output so the difference is never silent.
+UNTYPED_CRITERION = MatchCriterion(span="overlap", typed=False)
+
+
+def criterion_for(docs: list[Document]) -> MatchCriterion:
+    return CRITERION if any(d.typed for d in docs) else UNTYPED_CRITERION
+
+
 #: A10G on Modal, the GPU every local measurement in this project ran on.
 GPU_USD_PER_HOUR = 1.10
 
@@ -129,6 +140,7 @@ def evaluate(
     *,
     local_cost: float,
     claude_cost: float,
+    criterion: MatchCriterion | None = None,
 ) -> tuple[Operating, list[Counts], list[Counts]]:
     """Score the cascade at one threshold.
 
@@ -145,7 +157,7 @@ def evaluate(
         else:
             blended[doc.doc_id] = local.get(doc.doc_id, Prediction(doc_id=doc.doc_id))
 
-    per_doc = score_corpus(docs, blended, CRITERION)
+    per_doc = score_corpus(docs, blended, criterion or criterion_for(docs))
     comp = [s.components for s in per_doc]
     rel = [s.relations for s in per_doc]
 
@@ -189,8 +201,17 @@ def thresholds_from(confidence: dict[str, float], steps: int = 21) -> list[float
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path.cwd())
-    parser.add_argument("--corpus", default="aae-v2")
+    parser.add_argument("--corpus", default="aae-v2", help="corpus the threshold is swept on")
     parser.add_argument("--sweep-split", default="val")
+    parser.add_argument(
+        "--report-corpus",
+        default=None,
+        help=(
+            "corpus the selected threshold is reported on; defaults to --corpus. "
+            "A different corpus is the out-of-domain test: the threshold is "
+            "carried across unchanged, with no re-tuning."
+        ),
+    )
     parser.add_argument("--report-split", default="test")
     parser.add_argument("--claude-model", default="claude-haiku-4-5")
     parser.add_argument(
@@ -206,6 +227,7 @@ def main() -> int:
     parser.add_argument("--local-docs-per-second", type=float, default=1.487)
     args = parser.parse_args()
 
+    report_corpus = args.report_corpus or args.corpus
     claude_cost = claude_usd_per_doc(args.root, args.claude_model)
     local_cost = local_usd_per_doc(args.local_docs_per_second)
 
@@ -277,9 +299,13 @@ def main() -> int:
             break
 
     # ---- report once on test -------------------------------------------------
-    test_docs = load_split(args.root, args.corpus, args.report_split)
+    test_docs = load_split(args.root, report_corpus, args.report_split)
     test_local, test_conf = load_local(args.root / args.local_test, test_docs)
-    test_claude = load_claude(args.root, f"{args.claude_model}_{args.corpus}_{args.report_split}")
+    test_claude = load_claude(args.root, f"{args.claude_model}_{report_corpus}_{args.report_split}")
+    # arg-microtexts carries no component types, so the criterion the result is
+    # reported under is not always the one the threshold was chosen under. Both
+    # labels go into the output rather than being resolved silently.
+    report_criterion = criterion_for(test_docs)
 
     threshold = chosen.threshold if chosen else float("inf")
     test_point, test_comp, test_rel = evaluate(
@@ -290,6 +316,7 @@ def main() -> int:
         threshold,
         local_cost=local_cost,
         claude_cost=claude_cost,
+        criterion=report_criterion,
     )
     _, test_ceiling_comp, test_ceiling_rel = evaluate(
         test_docs,
@@ -299,13 +326,30 @@ def main() -> int:
         float("inf"),
         local_cost=local_cost,
         claude_cost=claude_cost,
+        criterion=report_criterion,
+    )
+    # Never escalating is the other reference point. A cascade has to beat both
+    # of its legs to be worth the complexity, and at 0% escalation it *is* this
+    # one -- which is only visible if the comparison is made.
+    local_only, local_comp, local_rel = evaluate(
+        test_docs,
+        test_local,
+        test_claude,
+        test_conf,
+        float("-inf"),
+        local_cost=local_cost,
+        claude_cost=claude_cost,
+        criterion=report_criterion,
     )
 
     report: dict[str, object] = {
         "corpus": args.corpus,
         "sweep_split": args.sweep_split,
+        "report_corpus": report_corpus,
         "report_split": args.report_split,
+        "out_of_domain": report_corpus != args.corpus,
         "criterion": CRITERION.label,
+        "report_criterion": report_criterion.label,
         "claude_model": args.claude_model,
         "costs": {
             "claude_usd_per_doc": round(claude_cost, 6),
@@ -328,12 +372,18 @@ def main() -> int:
             "vs_claude_only_relations": paired_bootstrap_delta(
                 test_rel, test_ceiling_rel
             ).as_dict(),
+            # What the routing bought over never escalating at all. At 0%
+            # escalation these are identically zero, which is the finding.
+            "vs_local_only_components": paired_bootstrap_delta(test_comp, local_comp).as_dict(),
+            "vs_local_only_relations": paired_bootstrap_delta(test_rel, local_rel).as_dict(),
+            "local_only": local_only.as_dict(),
         },
     }
 
     out_dir = args.root / "results" / "cascade"
     out_dir.mkdir(parents=True, exist_ok=True)
-    (out_dir / f"cascade_{args.corpus}.json").write_text(
+    stem = report_corpus if report_corpus == args.corpus else f"{args.corpus}-to-{report_corpus}"
+    (out_dir / f"cascade_{stem}.json").write_text(
         json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
 
@@ -351,7 +401,10 @@ def main() -> int:
     )
 
     print(f"\nselected threshold: {report['selected_threshold']} (on {args.sweep_split})")
-    print(f"\ntest ({len(test_docs)} docs)")
+    print(
+        f"\ntest: {report_corpus}/{args.report_split} "
+        f"({len(test_docs)} docs, {report_criterion.label})"
+    )
     print(
         f"  escalated {test_point.escalation_rate:.0%}  "
         f"comp F1 {test_point.component_f1:.3f}  rel F1 {test_point.relation_f1:.3f}  "

@@ -1,0 +1,229 @@
+{
+  "model": "qwen3.5-2b-lora-unconstrained",
+  "corpus": "microtexts-en",
+  "split": "test",
+  "constrained": false,
+  "adapter": null,
+  "gpu": "A10G",
+  "run": {
+    "documents": 112,
+    "invalid_outputs": 8,
+    "unalignable_components": 0,
+    "truncated": 8,
+    "output_tokens": 47869,
+    "mean_output_tokens": 427.4,
+    "generate_seconds": 40.41,
+    "batched_docs_per_second": 2.772,
+    "engine_load_seconds": 31.66
+  },
+  "scores": {
+    "exact/typed": {
+      "status": "not_applicable"
+    },
+    "exact/untyped": {
+      "components": {
+        "tp": 4,
+        "fp": 677,
+        "fn": 572,
+        "support": 576,
+        "precision": 0.005873715124816446,
+        "recall": 0.006944444444444444,
+        "f1": 0.006364359586316626,
+        "f1_ci": {
+          "point": 0.006364359586316627,
+          "ci_low": 0.0015408023951101418,
+          "ci_high": 0.012976480129764802,
+          "confidence": 0.95,
+          "iterations": 10000
+        }
+      },
+      "relations": {
+        "tp": 0,
+        "fp": 276,
+        "fn": 464,
+        "support": 464,
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1": 0.0,
+        "f1_ci": {
+          "point": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "confidence": 0.95,
+          "iterations": 10000
+        }
+      },
+      "components_by_type": {
+        "Claim": {
+          "tp": 0,
+          "fp": 228,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "MajorClaim": {
+          "tp": 0,
+          "fp": 158,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "Premise": {
+          "tp": 0,
+          "fp": 290,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "untyped": {
+          "tp": 4,
+          "fp": 1,
+          "fn": 572,
+          "support": 576,
+          "precision": 0.8,
+          "recall": 0.006944444444444444,
+          "f1": 0.013769363166953529,
+          "f1_ci": {
+            "point": 0.013769363166953529,
+            "ci_low": 0.003395585738539898,
+            "ci_high": 0.027633851468048358,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        }
+      },
+      "relations_by_type": {}
+    },
+    "overlap>=0.5/typed": {
+      "status": "not_applicable"
+    },
+    "overlap>=0.5/untyped": {
+      "components": {
+        "tp": 443,
+        "fp": 238,
+        "fn": 133,
+        "support": 576,
+        "precision": 0.6505139500734214,
+        "recall": 0.7690972222222222,
+        "f1": 0.7048528241845664,
+        "f1_ci": {
+          "point": 0.7048528241845664,
+          "ci_low": 0.6738768718801996,
+          "ci_high": 0.7351355689557937,
+          "confidence": 0.95,
+          "iterations": 10000
+        }
+      },
+      "relations": {
+        "tp": 35,
+        "fp": 241,
+        "fn": 429,
+        "support": 464,
+        "precision": 0.12681159420289856,
+        "recall": 0.07543103448275862,
+        "f1": 0.09459459459459459,
+        "f1_ci": {
+          "point": 0.0945945945945946,
+          "ci_low": 0.06315645079777635,
+          "ci_high": 0.12810623314746455,
+          "confidence": 0.95,
+          "iterations": 10000
+        }
+      },
+      "components_by_type": {
+        "Claim": {
+          "tp": 0,
+          "fp": 70,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "MajorClaim": {
+          "tp": 0,
+          "fp": 53,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "Premise": {
+          "tp": 0,
+          "fp": 115,
+          "fn": 0,
+          "support": 0,
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "f1_ci": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        },
+        "untyped": {
+          "tp": 443,
+          "fp": 0,
+          "fn": 133,
+          "support": 576,
+          "precision": 1.0,
+          "recall": 0.7690972222222222,
+          "f1": 0.8694798822374876,
+          "f1_ci": {
+            "point": 0.8694798822374877,
+            "ci_low": 0.8365095285857572,
+            "ci_high": 0.898635477582846,
+            "confidence": 0.95,
+            "iterations": 10000
+          }
+        }
+      },
+      "relations_by_type": {}
+    }
+  }
+}
