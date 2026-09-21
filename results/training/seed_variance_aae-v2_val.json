@@ -1,0 +1,125 @@
+{
+  "corpus": "aae-v2",
+  "split": "val",
+  "models": [
+    "qwen3.5-2b-merged",
+    "qwen3.5-2b-merged-seed1",
+    "qwen3.5-2b-merged-seed2"
+  ],
+  "selected_model": "qwen3.5-2b-merged",
+  "note": "Seed 0 was selected on validation before seeds 1 and 2 were scored. This is a variance measurement, not a selection.",
+  "scores": {
+    "exact/typed": {
+      "components": {
+        "n_seeds": 3,
+        "mean": 0.638406,
+        "std": 0.006872,
+        "min": 0.630753,
+        "max": 0.64405,
+        "selected": 0.640415,
+        "by_model": {
+          "qwen3.5-2b-merged": 0.640415,
+          "qwen3.5-2b-merged-seed1": 0.64405,
+          "qwen3.5-2b-merged-seed2": 0.630753
+        }
+      },
+      "relations": {
+        "n_seeds": 3,
+        "mean": 0.297014,
+        "std": 0.030249,
+        "min": 0.262712,
+        "max": 0.319865,
+        "selected": 0.319865,
+        "by_model": {
+          "qwen3.5-2b-merged": 0.319865,
+          "qwen3.5-2b-merged-seed1": 0.308466,
+          "qwen3.5-2b-merged-seed2": 0.262712
+        }
+      }
+    },
+    "exact/untyped": {
+      "components": {
+        "n_seeds": 3,
+        "mean": 0.767964,
+        "std": 0.004697,
+        "min": 0.762552,
+        "max": 0.770984,
+        "selected": 0.770984,
+        "by_model": {
+          "qwen3.5-2b-merged": 0.770984,
+          "qwen3.5-2b-merged-seed1": 0.770355,
+          "qwen3.5-2b-merged-seed2": 0.762552
+        }
+      },
+      "relations": {
+        "n_seeds": 3,
+        "mean": 0.357681,
+        "std": 0.029156,
+        "min": 0.325424,
+        "max": 0.382155,
+        "selected": 0.382155,
+        "by_model": {
+          "qwen3.5-2b-merged": 0.382155,
+          "qwen3.5-2b-merged-seed1": 0.365465,
+          "qwen3.5-2b-merged-seed2": 0.325424
+        }
+      }
+    },
+    "overlap>=0.5/typed": {
+      "components": {
+        "n_seeds": 3,
+        "mean": 0.738448,
+        "std": 0.006565,
+        "min": 0.732218,
+        "max": 0.745303,
+        "selected": 0.737824,
+        "by_model": {
+          "qwen3.5-2b-merged": 0.737824,
+          "qwen3.5-2b-merged-seed1": 0.745303,
+          "qwen3.5-2b-merged-seed2": 0.732218
+        }
+      },
+      "relations": {
+        "n_seeds": 3,
+        "mean": 0.352051,
+        "std": 0.03294,
+        "min": 0.315254,
+        "max": 0.378788,
+        "selected": 0.378788,
+        "by_model": {
+          "qwen3.5-2b-merged": 0.378788,
+          "qwen3.5-2b-merged-seed1": 0.362112,
+          "qwen3.5-2b-merged-seed2": 0.315254
+        }
+      }
+    },
+    "overlap>=0.5/untyped": {
+      "components": {
+        "n_seeds": 3,
+        "mean": 0.897889,
+        "std": 0.004489,
+        "min": 0.894301,
+        "max": 0.902923,
+        "selected": 0.894301,
+        "by_model": {
+          "qwen3.5-2b-merged": 0.894301,
+          "qwen3.5-2b-merged-seed1": 0.902923,
+          "qwen3.5-2b-merged-seed2": 0.896444
+        }
+      },
+      "relations": {
+        "n_seeds": 3,
+        "mean": 0.4296,
+        "std": 0.024733,
+        "min": 0.405085,
+        "max": 0.454545,
+        "selected": 0.454545,
+        "by_model": {
+          "qwen3.5-2b-merged": 0.454545,
+          "qwen3.5-2b-merged-seed1": 0.42917,
+          "qwen3.5-2b-merged-seed2": 0.405085
+        }
+      }
+    }
+  }
+}
