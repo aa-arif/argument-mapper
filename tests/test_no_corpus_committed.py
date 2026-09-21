@@ -80,8 +80,11 @@ def test_no_corpus_files_are_tracked() -> None:
 #: a model generation or a corpus excerpt.
 _MAX_FREE_TEXT_WORDS = 8
 
-#: Keys whose values are written by hand, in this repository, to describe a
-#: run. They are ours to publish. Anything not named here is data.
+#: Keys whose values describe the *run or the environment* rather than the
+#: corpus: hand-written labels, library versions, API signatures, error text.
+#: None of them can carry essay content. Anything not named here is treated as
+#: data, which is the safe default -- adding a key is a deliberate act, and it
+#: is the only way a long string reaches a results file.
 _DESCRIPTION_KEYS = frozenset(
     {
         "description",
@@ -89,6 +92,11 @@ _DESCRIPTION_KEYS = frozenset(
         "error",
         "note",
         "notes",
+        # `inspect.signature` output from a probe. It describes a library's
+        # API, which is why `probe_lora_modules.py` records it: "every key
+        # failed to parse" and "the probe called the function wrongly" produce
+        # the same empty list, and only one of them is a finding.
+        "parse_signature",
         "sampler",
         "selection_scalar",
         "served",
@@ -120,12 +128,28 @@ def _long_strings(node: object, key: str | None, found: list[tuple[str, int]]) -
             found.append((key or "<root>", words))
 
 
+def _result_files() -> list[str]:
+    """Tracked results files, plus untracked ones staged or sitting on disk.
+
+    Tracked-only was a mistake: a results file written by a probe is untracked
+    until the moment it is committed, so the guard passed locally and failed in
+    CI on the same content. A file under `results/` is going to be committed --
+    that is what the directory is for -- so it is checked now rather than after
+    the push.
+    """
+    tracked = {p for p in _tracked_files() if p.startswith("results/")}
+    on_disk = {
+        path.relative_to(_repo_root()).as_posix()
+        for path in (_repo_root() / "results").rglob("*")
+        if path.is_file()
+    }
+    return sorted(tracked | on_disk)
+
+
 def _tracked_result_documents() -> list[tuple[str, object]]:
     root = _repo_root()
     documents: list[tuple[str, object]] = []
-    for path in _tracked_files():
-        if not path.startswith("results/"):
-            continue
+    for path in _result_files():
         if not path.endswith((".json", ".jsonl")):
             continue
         text = (root / path).read_text(encoding="utf-8")
