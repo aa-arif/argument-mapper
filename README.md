@@ -23,9 +23,9 @@ Every number below is produced by a script in this repository and written under
 | 3. LoRA fine-tune (Qwen3.5-2B) | ✅ complete |
 | 4. Constrained decoding (vLLM JSON schema) | ✅ complete |
 | 5. Cascade routing | ✅ complete |
-| 6. Serving and load test | 🟡 stack built, load test not yet run |
+| 6. Serving and load test | ✅ complete |
 | 7. UI | ✅ complete |
-| 8. DeBERTa-v3 baseline (stretch) | ⬜ |
+| 8. DeBERTa-v3 baseline (stretch) | — not attempted |
 
 ---
 
@@ -144,8 +144,8 @@ Intervals are 95% bootstrap over documents. Full reports in
 | Model | Component F1 (overlap, untyped) | Component F1 (overlap, typed) | Relation F1 (overlap) |
 |---|---|---|---|
 | Claude Haiku 4.5 | 0.859 [0.830, 0.882] | 0.709 [0.673, 0.743] | 0.441 [0.390, 0.494] |
-| Claude Sonnet 5 | **0.883** [0.868, 0.897] | **0.762** [0.733, 0.791] | **0.485** [0.428, 0.542] |
-| Qwen3.5-2B + LoRA | 0.697 [0.657, 0.735] | 0.518 [0.469, 0.565] | 0.049 [0.028, 0.074] |
+| Claude Sonnet 5 | 0.883 [0.868, 0.897] | **0.762** [0.733, 0.791] | **0.485** [0.428, 0.542] |
+| Qwen3.5-2B + LoRA | **0.899** [0.879, 0.917] | 0.756 [0.730, 0.782] | 0.452 [0.395, 0.510] |
 
 **arg-microtexts, out-of-domain (112 documents).** Typed metrics are N/A —
 this corpus has no component type labels.
@@ -164,7 +164,7 @@ claim honest.
 
 Three things worth noting:
 
-- **Zero invalid outputs in 548 API calls.** Structured outputs
+- **Zero invalid outputs in 550 API calls.** Structured outputs
   (`output_config.format`) made the v1 JSON-repair path entirely unnecessary on
   the Claude route.
 - **Only 2 components out of ~7,000 could not be aligned** back to a span, so
@@ -182,45 +182,100 @@ offsets. This is why overlap is the headline metric throughout.
 
 ### Cost and latency
 
-Measured per document from the cost ledger
-([`results/cost/ledger.jsonl`](results/cost/)), synchronous calls, prompt
-caching on. Latency is wall-clock from an ordinary consumer connection.
+API prices are per-document means from the spend ledger
+([`results/cost/`](results/cost/)). The local price is the A10G hourly rate
+divided by **measured** peak throughput from the load test below — not an
+estimate.
 
-| Model | $/doc (AAE) | $/1K docs | p50 | p95 |
+| | $/doc | $/1K docs | vs local | p50 latency |
 |---|---|---|---|---|
-| Claude Haiku 4.5 | $0.0047 | $4.66 | 3.42 s | 4.68 s |
-| Claude Sonnet 5 | $0.0195 | $19.51 | 10.93 s | 24.19 s |
+| Qwen3.5-2B + LoRA (A10G) | $0.000085 | **$0.09** | — | **5.3 s** |
+| Claude Haiku 4.5 | $0.00398 | $3.98 | 47× | 3.4 s |
+| Claude Sonnet 5 | $0.01581 | $15.81 | **186×** | 10.9 s |
 
-Sonnet 5 costs **4.2×** more and is **3.2×** slower for +0.053 typed component
-F1 and +0.044 relation F1. That gap is the whole reason to ask whether a
-fine-tuned 2B model can close it.
-
-Prompt caching matters more than it looks: the 3-exemplar prefix is ~4,970
-tokens carried on every request, and caching bills it at a tenth. It also has
-a trap — see the note on Haiku's 4,096-token minimum in *Reproducing* below.
+The local model is also roughly **half Sonnet's latency** at concurrency 1.
+The honest caveat on the cost ratio: it assumes a saturated GPU. An A10G idling
+between requests costs the same per hour, so the advantage is real for batch
+workloads and shrinks with utilisation.
 
 ### Can a fine-tuned 2B replace the API?
 
-Not on this task, and the way it fails is more interesting than the fact that
-it does.
+**On this task, yes — and the first answer this repository produced was "no",
+which is the more useful result.**
 
-The fine-tuned model reaches **79%** of Sonnet 5's untyped component F1 and
-**10%** of its relation F1. Identifying which spans are argument components is
-evidently learnable from 258 training documents. Wiring those components into
-a graph is not.
+A paired bootstrap over the same 80 test documents, all four matching criteria,
+components and relations. Full output in
+[`results/comparisons/`](results/comparisons/).
 
-Looking at its output shows the shape of the failure: it emits a **star**, with
-the first component supporting every other one. It has learned what an
-argument component looks like and not what an argument *is*.
+| Qwen3.5-2B + LoRA vs | Components | Relations | Significant |
+|---|---|---|---|
+| Claude Sonnet 5 (overlap, untyped) | +0.016 [−0.003, +0.033] | −0.034 [−0.097, +0.029] | **0 of 8** measures |
+| Claude Sonnet 5 (overlap, typed) | −0.006 [−0.036, +0.025] | −0.048 [−0.113, +0.019] | — |
+| Claude Haiku 4.5 (overlap, untyped) | **+0.040** [+0.013, +0.072] | +0.010 [−0.053, +0.072] | **4 of 8** measures |
+| Claude Haiku 4.5 (overlap, typed) | **+0.048** [+0.013, +0.083] | −0.001 [−0.066, +0.065] | — |
 
-Two caveats worth stating plainly:
+Against Sonnet 5 **none of the eight differences excludes zero**: on this
+corpus a 2B model with an adapter touching 0.58% of its parameters is
+statistically indistinguishable from the frontier model, at 186× less per
+document. Against Haiku 4.5 it wins component extraction on all four criteria
+and ties on relations.
 
-- **This is one recipe, not a verdict on 2B models.** r=16 LoRA, 258 examples,
-  10 epochs. A larger adapter, more data, or a relation-specific objective
-  might close some of the gap. What is measured here is this configuration.
-- **The seeds agree almost exactly** (validation selection score 0.263 ± 0.000
-  across three seeds), so the gap is a property of the recipe rather than of
-  the random draw.
+This is not a claim that 2B models match frontier models in general. It is a
+claim about one narrow, well-specified, in-domain task with 258 training
+examples — which is exactly the shape of task worth fine-tuning for, and
+exactly the shape of task where an API call is hardest to justify.
+
+#### This result was wrong at first, and the way it was wrong matters
+
+Before the fix, the same model measured 0.518 typed component F1 and 0.049
+untyped relation F1 (the pre-fix report is kept verbatim at
+[`results/diagnostics/qwen3.5-2b-lora_aae-v2_test_pre-merge-fix.json`](results/diagnostics/)),
+and its relation output was a **star**: the first component supporting every
+other one. That looked like a clean finding — components
+transfer to a small model, structure does not.
+
+It was an artefact. vLLM accepted `--enable-lora`, accepted the `lora_request`
+on every call, JIT-compiled the LoRA kernels, and served **base-model weights**.
+No error, no warning. Five checks passed while the conclusion stayed false: the
+adapter files were real and non-trivial, checkpoints from different epochs
+differed on disk, the request was accepted, the kernels compiled, and 3 of 8
+documents produced different output between adapters.
+
+The decisive test was smaller than any of them — *ask the model to reproduce
+its own training data*. Six documents the adapter saw ten times, generated
+three ways
+([`scripts/gpu/probe_adapter_effect.py`](scripts/gpu/probe_adapter_effect.py),
+output in [`results/diagnostics/`](results/diagnostics/)):
+
+| Path | Valid JSON | What it emitted |
+|---|---|---|
+| base model, transformers | **0 / 6** | `### MajorClaim` — Markdown, a different shape each time |
+| base + adapter, PEFT | **6 / 6** | `{"components":[{"id":"c1","type":"MajorClaim",…` |
+| merged weights, transformers | **2 / 2** | identical to PEFT |
+
+The adapter was fine. The serving path was not. Merging the adapter into the
+base weights and serving the merged model — which is what a production
+deployment would do anyway — inverted every result above.
+
+One signal had been visible the whole time and was misread: checkpoint
+selection scored three different random seeds at **0.262997, standard
+deviation 0.000000**
+([`results/training/checkpoint_selection.json`](results/training/)). Three
+independent fine-tunes agreeing to six decimal places is not a stable recipe,
+it is the same model three times. Those selection numbers predate the fix and
+are kept as the record of it.
+
+Two things make the corrected result trustworthy rather than lucky:
+
+- **Prompt parity was verified independently**
+  ([`scripts/gpu/probe_prompt_parity.py`](scripts/gpu/probe_prompt_parity.py)):
+  the inference prompt is an exact character prefix of the training text, the
+  empty thinking block appears in both, and the tokenised training labels end
+  in `<|im_end|>` — so the model was taught where to stop.
+- **Checkpoint selection was re-run on merged weights.** Epoch 10 beats epoch 2
+  on validation (untyped component F1 0.894 vs 0.888, relation F1 0.455 vs
+  0.398), so the 10-epoch checkpoint carried through — selected on validation,
+  scored once on test.
 
 ### Constrained decoding
 
@@ -230,100 +285,103 @@ vLLM was given the JSON schema. Measured on AAE test;
 
 | | Invalid output | Truncated | Component F1 (overlap, untyped) |
 |---|---|---|---|
-| Constrained | **0.0%** | 0.0% | 0.697 [0.657, 0.735] |
-| Unconstrained | **100.0%** | 28.7% | 0.000 |
+| Constrained | **0.0%** (0/80) | 0.0% | 0.899 [0.879, 0.917] |
+| Unconstrained | 1.2% (1/80) | 1.2% | 0.890 [0.869, 0.909] |
 
-Every unconstrained generation failed to parse. **The local route therefore
-carries no JSON-repair path** — constrained decoding replaces it outright,
-which is the question this milestone asked. The Claude route keeps Pydantic
-validation, though it has not needed it either: 548 API calls, zero invalid
-outputs.
+**Constrained decoding buys a guarantee, not quality.** Seven of the eight
+paired differences do not exclude zero; the eighth is +0.009 [+0.001, +0.019]
+on untyped overlap components — real, and tiny. A model fine-tuned on this
+format emits it unprompted 98.8% of the time.
 
-Two findings about constrained decoding that are easy to miss:
+That 1.2% is still why the local route carries **no JSON-repair path**. One
+unparseable document in eighty is one failed request in eighty; the schema
+turns a tail risk into an impossibility at no measurable cost in quality. The
+Claude route keeps Pydantic validation and has never needed it either — 550
+API calls, zero invalid outputs.
 
-**It guarantees syntax, not termination.** With an unbounded schema the output
-was well-formed and still unparseable: the model emitted the *type name* as
-each component's id, so every relation referenced the same two generic ids,
-and unlimited such relations stay schema-valid. The grammar never required a
-closing bracket and generation ran to the token cap. Termination has to be
-made a property of the grammar — `maxItems` — and the bound must be reachable
-*within* the token budget or it is no bound at all.
-
-**It can impose a convention the model never learned.** Constraining ids to
-`^c[0-9]{1,2}$` fixed the numbering completely and lifted relation F1 from
-0.003 to 0.028. That it only reached 0.028 is the clearest evidence that the
-remaining relation failure is structural rather than a formatting artefact.
+**Syntax is not termination.** An earlier unbounded schema produced output that
+was well-formed and still unusable: the model emitted the *type name* as each
+component id, every relation referenced the same two generic ids, and an
+unbounded array of such relations stays schema-valid forever. The grammar never
+required a closing bracket, so generation ran to the token cap. The fix is to
+make termination a property of the grammar — `maxItems` — and to check the
+bound is reachable *within* the token budget, which a regression test now does.
+This was observed while the serving path was silently running base weights, so
+it describes an unadapted model. That is precisely the case constrained
+decoding exists for, and the mechanism does not depend on the model.
 
 ### Cascade routing
 
-Run the fine-tuned model on everything; escalate to Claude Haiku 4.5 only where
-the local model's mean token logprob falls below a threshold. The threshold is
+Run the fine-tuned model on everything; escalate to Claude Sonnet 5 only where
+the local model mean token logprob falls below a threshold. The threshold is
 **swept on validation and reported once on test**. Full sweep in
 [`results/cascade/`](results/cascade/).
 
 Cost per document is measured, not estimated: the API price comes from the
 spend ledger, and the local price is the A10G hourly rate divided by measured
-batched throughput ($0.000205/doc at 1.49 docs/s).
+batched throughput ($0.0000995/doc at 3.07 docs/s).
+
+Validation sweep, 64 documents, 22 operating points:
 
 | Escalated | Component F1 | Relation F1 | $/1K docs |
 |---|---|---|---|
-| 0% (local only) | 0.483 | 0.028 | $0.21 |
-| 38% | 0.551 | 0.116 | $1.70 |
-| 80% | 0.604 | 0.261 | $3.37 |
-| 100% (Claude only) | 0.659 | 0.350 | $4.18 |
+| 0% (local only) | 0.738 | 0.379 | $0.10 |
+| 4.7% (**selected**) | 0.749 | 0.400 | $0.84 |
+| 60.9% (best observed) | 0.768 | 0.461 | $9.73 |
+| 100% (Claude only) | 0.749 | 0.422 | $15.91 |
 
-**The threshold selected on validation does not transfer to test.** At the
-chosen operating point, validation said the cascade matched Claude-only within
-its interval. Test says otherwise:
+The selection rule is the **cheapest** point whose paired difference against
+the best observed point does not exclude zero. On test that threshold escalates
+**zero documents** — the local model is confident on all 80 — so the cascade
+collapses to the local route:
 
-| | Delta vs Claude-only | 95% CI |
+| | Delta vs Claude-only (test) | 95% CI |
 |---|---|---|
-| Components | −0.056 | [−0.094, −0.025] |
-| Relations | −0.093 | [−0.142, −0.046] |
+| Components | −0.006 | [−0.036, +0.025] |
+| Relations | −0.048 | [−0.113, +0.019] |
 
-Both intervals exclude zero. The cascade saves **19%** of cost and is
-**measurably worse**, so the headline claim a cascade is supposed to
-support — same quality, less money — is not available here.
+Neither interval excludes zero, at **$0.10 per 1,000 documents against
+$15.91** — 160× cheaper, for quality that is not measurably different.
 
-That is the finding, and it is the reason the sweep ran on validation. Had the
-threshold been picked on test, the table above would have shown a flattering
-operating point that does not exist. With 64 validation documents and a weak
-local leg, the threshold fits the validation draw rather than a real property
-of the confidence signal.
+Two caveats worth stating. A cascade that escalates nothing is not a cascade:
+the finding is that *the routing logic is unnecessary here*, because the cheap
+leg is already good enough. A cascade earns its complexity when the gap is
+real, and after the fix it is not. And the confidence signal is consequently
+doing nothing observable — at 0% escalation it is never exercised on test, so
+this run says nothing about whether mean logprob is a good router.
 
-**Why the saving is small.** A cascade pays in proportion to the traffic its
-cheap leg can keep. This one reaches component F1 0.518 against Claude's 0.709,
-so it holds about 20% of documents before quality falls away — and 20% of the
-traffic is 20% of the bill. A cascade is only as good as its cheap model.
+**The selection logic had the same class of bug as the serving path.** It
+originally hard-coded Claude-only as the quality ceiling and looked for the
+cheapest point within noise of *that*. Once the local model matched the API,
+that reference selected a point which was both more expensive and worse. The
+assumption was invisible because it had been true when it was written;
+referencing the best observed sweep point works either way.
 
 ### Throughput
 
-`TBD` — the harness is written and the stack runs, but the load test has not
-been executed yet. It was started and stopped mid-startup when the host ran
-low on memory, so there are no partial numbers to report and nothing is quoted
-here.
+Locust headless with zero wait time, driving vLLM **inside the same container**
+over localhost — a client on a laptop would have measured a broadband link and
+the round trip to Modal's region. A10G, merged weights, PyTorch-native sampler
+(flashinfer's is disabled; see DECISIONS D21). Zero failures at every level.
+[`results/serving/loadtest.json`](results/serving/).
 
-To produce them:
+| Concurrency | req/s | p50 | p95 | p99 | requests |
+|---|---|---|---|---|---|
+| 1 | 0.18 | 5.3 s | 7.3 s | 7.3 s | 13 |
+| 2 | 0.36 | 5.2 s | 7.5 s | 8.1 s | 26 |
+| 4 | 0.67 | 5.4 s | 7.9 s | 8.0 s | 49 |
+| 8 | 1.24 | 5.9 s | 9.0 s | 12.0 s | 90 |
+| 16 | 2.21 | 6.7 s | 9.6 s | 10.0 s | 161 |
+| 32 | **3.59** | 8.1 s | 12.0 s | 12.0 s | 264 |
 
-```bash
-PYTHONIOENCODING=utf-8 uv run --with modal modal run scripts/gpu/loadtest.py
-```
-
-It writes `results/serving/loadtest.json` with throughput and p50/p95/p99 at
-concurrency 1, 2, 4, 8, 16 and 32.
-
-Two things about how it measures, which matter for reading the eventual
-numbers. **Locust runs inside the same container as vLLM**, driving it over
-localhost — running the client from a laptop would have measured a home
-broadband link and the round trip to Modal's region rather than the serving
-system. And it reports the **sampler**: flashinfer's sampler is disabled in
-this image because its bundled CCCL headers do not match the toolkit's `nvcc`,
-so these are PyTorch-native sampler numbers. Decoding is greedy, so output is
-unaffected, but throughput may not be.
+Throughput scales close to linearly to 32 concurrent — 20× the requests per
+second for 32× the concurrency — while p50 rises only from 5.3 s to 8.1 s.
+Peak is **12,920 documents/hour on one GPU**, which is the number the cost
+table above is derived from.
 
 Only the local route is load-tested. Driving concurrent load at the Anthropic
 API would spend real money to measure someone else's infrastructure; that
-route's per-request latency is already in the cost table above.
+route's per-request latency is in the cost table.
 
 ### Running the stack
 
@@ -393,6 +451,30 @@ uv run argmap-build-datasets            # -> data/processed/, splits/, results/d
 uv run python -m argmap.cli.eval_alignment
 ```
 
+### Baselines, fine-tune, and everything else
+
+The API baselines need `ANTHROPIC_API_KEY` (see `.env.example`); the spend cap
+defaults to $20 and the ledger replays from disk on startup, so re-running a
+script cannot silently reset the budget.
+
+```bash
+uv run python -m argmap.cli.run_baseline --model claude-sonnet-5 --split test
+uv run python -m argmap.cli.compare --a qwen3.5-2b-lora --b claude-sonnet-5
+```
+
+The GPU work runs on [Modal](https://modal.com) (`modal token new` first).
+Note the merge step: **serve merged weights, not base + adapter** — see the
+diagnostic above for why.
+
+```bash
+uv run modal run scripts/gpu/train_lora.py --seeds 0,1,2 --epochs 10
+uv run modal run scripts/gpu/train_lora.py::merge     --adapter Qwen__Qwen3.5-2B/e10/seed0/epoch10 --out-name e10-seed0-epoch10
+uv run modal run scripts/gpu/gen_val.py  --merged e10-seed0-epoch10
+uv run modal run scripts/gpu/gen_test.py --merged e10-seed0-epoch10
+uv run modal run scripts/gpu/loadtest.py --merged e10-seed0-epoch10
+uv run python -m argmap.cli.cascade --sweep-split val --report-split test
+```
+
 ### Checks
 
 ```bash
@@ -440,9 +522,14 @@ The code in this repository is MIT licensed.
 src/argmap/
   schema.py        unified graph schema; validates span/text integrity
   align.py         fuzzy text -> span alignment, and its refinement pass
+  prompts.py       response schema, system prompt, bounded grammar
   data/            corpus converters (brat, arggraph), download, splits
   metrics/         matching criteria, P/R/F1, document-level bootstrap
-  cli/             dataset build, alignment study
+  extractors/      Claude and vLLM routes + the shared graph assembler
+  serve/           FastAPI router, batching, content-hash cache, spend ledger
+  cli/             dataset build, alignment study, baselines, cascade, compare
+scripts/gpu/       Modal jobs: train, merge, generate, load test, probes
+docker/            API and web images; compose.yaml wires them together
 tests/             pytest; synthetic fixtures only, no corpus needed
 web/               React Flow + dagre front end
 results/           every measured number
