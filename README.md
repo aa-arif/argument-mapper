@@ -20,8 +20,8 @@ Every number below is produced by a script in this repository and written under
 |---|---|
 | 1. Data and metrics | ✅ complete |
 | 2. Frontier baselines (Sonnet 5, Haiku 4.5) | ✅ complete |
-| 3. LoRA fine-tune (Qwen3.5-2B) | ⬜ |
-| 4. Constrained decoding (vLLM JSON schema) | ⬜ |
+| 3. LoRA fine-tune (Qwen3.5-2B) | ✅ complete |
+| 4. Constrained decoding (vLLM JSON schema) | ✅ complete |
 | 5. Cascade routing | ⬜ |
 | 6. Serving and load test | ⬜ |
 | 7. UI | ⬜ |
@@ -145,6 +145,7 @@ Intervals are 95% bootstrap over documents. Full reports in
 |---|---|---|---|
 | Claude Haiku 4.5 | 0.859 [0.830, 0.882] | 0.709 [0.673, 0.743] | 0.441 [0.390, 0.494] |
 | Claude Sonnet 5 | **0.883** [0.868, 0.897] | **0.762** [0.733, 0.791] | **0.485** [0.428, 0.542] |
+| Qwen3.5-2B + LoRA | 0.697 [0.657, 0.735] | 0.518 [0.469, 0.565] | 0.049 [0.028, 0.074] |
 
 **arg-microtexts, out-of-domain (112 documents).** Typed metrics are N/A —
 this corpus has no component type labels.
@@ -197,6 +198,61 @@ fine-tuned 2B model can close it.
 Prompt caching matters more than it looks: the 3-exemplar prefix is ~4,970
 tokens carried on every request, and caching bills it at a tenth. It also has
 a trap — see the note on Haiku's 4,096-token minimum in *Reproducing* below.
+
+### Can a fine-tuned 2B replace the API?
+
+Not on this task, and the way it fails is more interesting than the fact that
+it does.
+
+The fine-tuned model reaches **79%** of Sonnet 5's untyped component F1 and
+**10%** of its relation F1. Identifying which spans are argument components is
+evidently learnable from 258 training documents. Wiring those components into
+a graph is not.
+
+Looking at its output shows the shape of the failure: it emits a **star**, with
+the first component supporting every other one. It has learned what an
+argument component looks like and not what an argument *is*.
+
+Two caveats worth stating plainly:
+
+- **This is one recipe, not a verdict on 2B models.** r=16 LoRA, 258 examples,
+  10 epochs. A larger adapter, more data, or a relation-specific objective
+  might close some of the gap. What is measured here is this configuration.
+- **The seeds agree almost exactly** (validation selection score 0.263 ± 0.000
+  across three seeds), so the gap is a property of the recipe rather than of
+  the random draw.
+
+### Constrained decoding
+
+Same model, same prompts, same greedy decoding. The only difference is whether
+vLLM was given the JSON schema. Measured on AAE test;
+[`results/constrained/`](results/constrained/).
+
+| | Invalid output | Truncated | Component F1 (overlap, untyped) |
+|---|---|---|---|
+| Constrained | **0.0%** | 0.0% | 0.697 [0.657, 0.735] |
+| Unconstrained | **100.0%** | 28.7% | 0.000 |
+
+Every unconstrained generation failed to parse. **The local route therefore
+carries no JSON-repair path** — constrained decoding replaces it outright,
+which is the question this milestone asked. The Claude route keeps Pydantic
+validation, though it has not needed it either: 548 API calls, zero invalid
+outputs.
+
+Two findings about constrained decoding that are easy to miss:
+
+**It guarantees syntax, not termination.** With an unbounded schema the output
+was well-formed and still unparseable: the model emitted the *type name* as
+each component's id, so every relation referenced the same two generic ids,
+and unlimited such relations stay schema-valid. The grammar never required a
+closing bracket and generation ran to the token cap. Termination has to be
+made a property of the grammar — `maxItems` — and the bound must be reachable
+*within* the token budget or it is no bound at all.
+
+**It can impose a convention the model never learned.** Constraining ids to
+`^c[0-9]{1,2}$` fixed the numbering completely and lifted relation F1 from
+0.003 to 0.028. That it only reached 0.028 is the clearest evidence that the
+remaining relation failure is structural rather than a formatting artefact.
 
 ### Cascade operating points
 
