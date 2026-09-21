@@ -24,7 +24,7 @@ Every number below is produced by a script in this repository and written under
 | 4. Constrained decoding (vLLM JSON schema) | ✅ complete |
 | 5. Cascade routing | ⬜ |
 | 6. Serving and load test | ⬜ |
-| 7. UI | ⬜ |
+| 7. UI | ✅ complete |
 | 8. DeBERTa-v3 baseline (stretch) | ⬜ |
 
 ---
@@ -261,6 +261,35 @@ remaining relation failure is structural rather than a formatting artefact.
 ### Throughput
 
 `TBD` — milestone 6.
+
+---
+
+## Interface
+
+![Argument graph extracted from a sample passage](docs/screenshots/02-graph.png)
+
+Source text on the left, argument graph on the right, both linked: selecting a
+component highlights it in all three panels. The graph is laid out
+bottom-to-top so premises sit beneath what they support and the major claim
+rises to the top, which makes an inverted edge obvious at a glance.
+
+Every run shows what it cost — model, latency and dollars — because the
+question this repository asks is quality *per dollar*, and a graph with no
+price attached hides half of it. Routes the server reports as unconfigured are
+disabled rather than hidden, so an unavailable local model is visible instead
+of silently missing.
+
+![Component selected, showing its relations in the inspector](docs/screenshots/03-inspector.png)
+
+The gold-annotation overlay draws annotator spans as an underline beneath the
+prediction's background tint, rather than as a second background — two
+backgrounds are illegible exactly where the layers disagree, which is the part
+worth reading closely.
+
+Screenshots are captured by `web/screenshots.mjs` against the production build.
+They only ever use the synthetic sample passage: the AAE licence forbids
+displaying the corpus, and a screenshot in a public README is about as
+displayed as text gets.
 
 ---
 

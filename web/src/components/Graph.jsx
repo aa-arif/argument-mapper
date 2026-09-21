@@ -1,184 +1,146 @@
-import { useEffect, useRef, useCallback } from "react";
+import dagre from "@dagrejs/dagre";
+import { useCallback, useEffect } from "react";
 import ReactFlow, {
-  MiniMap,
   Controls,
-  useNodesState,
-  useEdgesState,
   MarkerType,
+  MiniMap,
+  useEdgesState,
+  useNodesState,
 } from "reactflow";
 import "reactflow/dist/style.css";
-import dagre from "@dagrejs/dagre";
-import { typeColors, relColors, relIcons, NODE_WIDTH, NODE_HEIGHT } from "../constants";
+
+import {
+  componentColors,
+  NODE_HEIGHT,
+  NODE_WIDTH,
+  relationColors,
+} from "../constants";
 import { nodeTypes } from "./nodeTypes";
 
-function getLayoutedNodes(claims, relationships) {
+// Bottom-to-top: premises sit below the claims they support, so the major
+// claim rises to the top. That matches how the annotation scheme is taught
+// and makes an inverted edge visually obvious.
+const LAYOUT = { rankdir: "BT", nodesep: 70, ranksep: 90 };
+
+function layout(components, relations) {
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: "BT", nodesep: 80, ranksep: 100 });
+  g.setGraph(LAYOUT);
 
-  claims.forEach((claim) => {
-    g.setNode(claim.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
+  components.forEach((component) => {
+    g.setNode(component.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
   });
-  relationships.forEach((rel) => {
-    g.setEdge(rel.source, rel.target);
+  relations.forEach((relation) => {
+    // dagre throws on an edge to a node it does not know about.
+    if (g.hasNode(relation.src) && g.hasNode(relation.tgt)) {
+      g.setEdge(relation.src, relation.tgt);
+    }
   });
 
   dagre.layout(g);
+  return g;
+}
 
-  return claims.map((claim) => {
-    const pos = g.node(claim.id);
+function buildNodes(components, relations, { selectedId, matchedIds }) {
+  const positions = layout(components, relations);
+  return components.map((component) => {
+    const node = positions.node(component.id);
     return {
-      id: claim.id,
-      type: "claimNode",
-      position: { x: pos.x - NODE_WIDTH / 2, y: pos.y - NODE_HEIGHT / 2 },
-      data: { ...claim, isSelected: false, isMatched: false },
-      draggable: false,
+      id: component.id,
+      type: "componentNode",
+      position: {
+        x: (node?.x ?? 0) - NODE_WIDTH / 2,
+        y: (node?.y ?? 0) - NODE_HEIGHT / 2,
+      },
+      data: {
+        ...component,
+        isSelected: component.id === selectedId,
+        isMatched: matchedIds?.has(component.id) ?? false,
+      },
+      draggable: true,
     };
   });
 }
 
-function buildEdges(relationships, opts = {}) {
-  const { matchedNodeIds } = opts;
-  return relationships.map((rel, i) => {
-    const strength = rel.strength ?? 0.5;
-    const strokeWidth = 1 + strength * 3;
-    const isDashed =
-      matchedNodeIds &&
-      matchedNodeIds.has(rel.source) &&
-      matchedNodeIds.has(rel.target);
-
+function buildEdges(relations, { selectedId }) {
+  return relations.map((relation, index) => {
+    const isAdjacent = selectedId === relation.src || selectedId === relation.tgt;
+    const color = relationColors[relation.type] ?? "#666";
     return {
-      id: `e-${rel.source}-${rel.target}-${i}`,
-      source: rel.source,
-      target: rel.target,
-      animated: rel.type === "supports",
+      id: relation.id ?? `e-${relation.src}-${relation.tgt}-${index}`,
+      source: relation.src,
+      target: relation.tgt,
+      animated: isAdjacent,
       style: {
-        stroke: relColors[rel.type] || "#555",
-        strokeWidth,
-        opacity: 0.7,
-        ...(isDashed ? { strokeDasharray: "6 3" } : {}),
+        stroke: color,
+        strokeWidth: isAdjacent ? 2.5 : 1.5,
+        opacity: selectedId && !isAdjacent ? 0.25 : 0.8,
       },
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        color: relColors[rel.type] || "#555",
-        width: 16,
-        height: 16,
-      },
-      label: `${relIcons[rel.type] || ""} ${rel.type}`,
-      labelStyle: {
-        fontSize: "8px",
-        fill: relColors[rel.type] || "#888",
-        fontFamily: "'DM Sans', sans-serif",
-      },
-      labelBgStyle: {
-        fill: "#0D0D0D",
-        fillOpacity: 0.85,
-      },
-      labelBgPadding: [4, 2],
-      labelBgBorderRadius: 3,
+      markerEnd: { type: MarkerType.ArrowClosed, color },
     };
   });
 }
 
 export default function Graph({
-  data,
-  selectedNode,
-  onNodeSelect,
-  layoutMode,
-  nodeOpacityOverrides,
-  matchedNodeIds,
+  components,
+  relations,
+  selectedId,
+  matchedIds,
+  onSelect,
+  fitViewKey,
 }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-  const reactFlowRef = useRef(null);
 
   useEffect(() => {
-    if (!data.claims.length) return;
+    setNodes(buildNodes(components, relations, { selectedId, matchedIds }));
+    setEdges(buildEdges(relations, { selectedId }));
+  }, [components, relations, selectedId, matchedIds, setNodes, setEdges]);
 
-    const newEdges = buildEdges(data.relationships, { matchedNodeIds });
+  const handleNodeClick = useCallback(
+    (_event, node) => {
+      onSelect?.(node.id === selectedId ? null : node.id);
+    },
+    [onSelect, selectedId],
+  );
 
-    if (layoutMode === "hierarchical") {
-      setNodes(getLayoutedNodes(data.claims, data.relationships));
-    } else {
-      const n = data.claims.length;
-      const radius = Math.max(150, n * 40);
-      setNodes(
-        data.claims.map((claim, i) => {
-          const angle = (2 * Math.PI * i) / n - Math.PI / 2;
-          return {
-            id: claim.id,
-            type: "claimNode",
-            position: {
-              x: 400 + radius * Math.cos(angle) - NODE_WIDTH / 2,
-              y: 300 + radius * Math.sin(angle) - NODE_HEIGHT / 2,
-            },
-            data: { ...claim, isSelected: false, isMatched: false },
-            draggable: true,
-          };
-        })
-      );
-    }
-
-    setEdges(newEdges);
-
-    setTimeout(() => {
-      reactFlowRef.current?.fitView({ padding: 0.2, duration: 300 });
-    }, 50);
-  }, [data, layoutMode, matchedNodeIds]);
-
-  useEffect(() => {
-    setNodes((nds) =>
-      nds.map((n) => {
-        const opacity = nodeOpacityOverrides?.[n.id];
-        const isMatched = matchedNodeIds?.has(n.id) ?? false;
-        return {
-          ...n,
-          data: { ...n.data, isSelected: selectedNode?.id === n.id, isMatched },
-          style: opacity != null ? { opacity } : undefined,
-        };
-      })
+  if (components.length === 0) {
+    return (
+      <div className="graph-empty">
+        <p>No argument components yet.</p>
+      </div>
     );
-  }, [selectedNode, nodeOpacityOverrides, matchedNodeIds, setNodes]);
-
-  const onNodeClick = useCallback(
-    (_, node) => onNodeSelect(node.data),
-    [onNodeSelect]
-  );
-
-  const onPaneClick = useCallback(
-    () => onNodeSelect(null),
-    [onNodeSelect]
-  );
+  }
 
   return (
     <ReactFlow
+      key={fitViewKey}
       nodes={nodes}
       edges={edges}
       onNodesChange={onNodesChange}
       onEdgesChange={onEdgesChange}
+      onNodeClick={handleNodeClick}
+      onPaneClick={() => onSelect?.(null)}
       nodeTypes={nodeTypes}
-      onNodeClick={onNodeClick}
-      onPaneClick={onPaneClick}
-      onInit={(instance) => { reactFlowRef.current = instance; }}
-      nodesDraggable={layoutMode === "free"}
       fitView
-      fitViewOptions={{ padding: 0.2 }}
-      minZoom={0.25}
-      maxZoom={4}
+      minZoom={0.2}
       proOptions={{ hideAttribution: true }}
-      style={{ background: "transparent" }}
     >
+      <Controls showInteractive={false} />
       <MiniMap
+        pannable
+        zoomable
+        nodeColor={(node) => componentColors[node.data?.type] ?? "#888"}
+        nodeStrokeWidth={0}
+        // maskColor is the *unviewed* area; leaving it at the light default
+        // puts a grey slab over a dark canvas.
+        maskColor="rgba(10, 10, 12, 0.75)"
         style={{
-          background: "#141414",
-          border: "1px solid #2A2A2A",
-          borderRadius: "6px",
+          background: "#1b1b1f",
+          border: "1px solid #2e2e36",
+          borderRadius: 6,
         }}
-        nodeColor={(node) => typeColors[node.data?.type] || "#666"}
-        maskColor="#0D0D0D80"
-        position="bottom-left"
       />
-      <Controls position="bottom-right" showInteractive={false} />
     </ReactFlow>
   );
 }

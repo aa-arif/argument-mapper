@@ -1,44 +1,80 @@
-export const typeColors = {
-  premise: "#D4A574",
-  conclusion: "#7BA5C4",
-  objection: "#C47B7B",
-  assumption: "#8BC47B",
-  weakness: "#A06090",
-  hidden_assumption: "#6090A0",
+// Visual vocabulary for the unified argument schema.
+//
+// These are the Argument Annotated Essays categories, which is what the
+// backend, the metrics and the gold annotations all speak. v1 used a richer
+// philosophy-flavoured set (objection, hidden_assumption, weakness); those had
+// no gold labels behind them, so nothing could ever be scored against them.
+
+export const componentColors = {
+  MajorClaim: "#7BA5C4",
+  Claim: "#D4A574",
+  Premise: "#8BC47B",
 };
 
-export const relColors = {
-  supports: "#7BA5C4",
-  opposes: "#C47B7B",
-  refines: "#8BC47B",
-  depends_on: "#D4A574",
+export const componentLabels = {
+  MajorClaim: "Major claim",
+  Claim: "Claim",
+  Premise: "Premise",
 };
 
-export const typeLabels = {
-  premise: "Premise",
-  conclusion: "Conclusion",
-  objection: "Objection",
-  assumption: "Assumption",
-  weakness: "Weakness",
-  hidden_assumption: "Hidden Assumption",
+// Short forms for the node badges, where horizontal space is tight.
+export const componentAbbrev = {
+  MajorClaim: "MC",
+  Claim: "C",
+  Premise: "P",
 };
 
-export const relIcons = {
-  supports: "\u2191",
-  opposes: "\u2297",
-  refines: "\u21BB",
-  depends_on: "\u21E3",
+export const componentOrder = ["MajorClaim", "Claim", "Premise"];
+
+export const relationColors = {
+  supports: "#8BC47B",
+  attacks: "#C47B7B",
 };
 
-export const framingColors = {
-  neutral: "#777",
-  loaded: "#D4A574",
-  one_sided: "#C47B7B",
-  balanced: "#8BC47B",
+export const relationLabels = {
+  supports: "supports",
+  attacks: "attacks",
 };
 
-export const NODE_WIDTH = 160;
-export const NODE_HEIGHT = 140;
+export const relationIcons = {
+  supports: "↑",
+  attacks: "⊗",
+};
+
+// Gold annotations render in a single neutral colour rather than by type: the
+// overlay answers "where are the real components", and colouring it like the
+// prediction makes the two hard to tell apart at a glance.
+export const GOLD_COLOR = "#9B8AC4";
+
+export const ROUTES = [
+  {
+    id: "claude",
+    model: "claude-sonnet-5",
+    label: "Claude Sonnet 5",
+    detail: "Frontier API, structured outputs",
+  },
+  {
+    id: "claude",
+    model: "claude-haiku-4-5",
+    label: "Claude Haiku 4.5",
+    detail: "Cheaper frontier API",
+  },
+  {
+    id: "local",
+    model: "qwen3.5-2b-lora",
+    label: "Qwen3.5-2B + LoRA",
+    detail: "Fine-tuned local model, JSON-schema constrained",
+  },
+  {
+    id: "cascade",
+    model: "cascade",
+    label: "Cascade",
+    detail: "Local model, escalating low-confidence documents",
+  },
+];
+
+export const NODE_WIDTH = 190;
+export const NODE_HEIGHT = 120;
 
 export const SAMPLE_PASSAGE = `If morality is to have any genuine authority over us, its commands must hold unconditionally, not as counsels of prudence. A hypothetical imperative says: "If you want X, do Y." But such rules bind us only insofar as we happen to desire X; change the desire and the rule evaporates. A moral law that could be dismissed by simply wanting something else would be no law at all, only advice.
 

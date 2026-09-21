@@ -1,131 +1,102 @@
-import { useState, useRef } from "react";
-import { SAMPLE_PASSAGE } from "../constants";
+import { useRef, useState } from "react";
 
-const supportedExts = [".txt", ".md"];
+const ACCEPTED = [".txt", ".md"];
 
-export default function TextInputPanel({ text, onTextChange, onExtract, onFileUpload, processing }) {
-  const [dragOver, setDragOver] = useState(false);
-  const [fileError, setFileError] = useState(null);
-  const fileInputRef = useRef(null);
+export default function TextInputPanel({
+  text,
+  onTextChange,
+  onExtract,
+  onSample,
+  onLoadGold,
+  processing,
+}) {
+  const [isDragging, setIsDragging] = useState(false);
+  const fileRef = useRef(null);
 
-  const validateAndUpload = (file) => {
-    const ext = "." + file.name.split(".").pop().toLowerCase();
-    if (!supportedExts.includes(ext)) {
-      setFileError(`Unsupported file type (${ext}). Use .txt or .md for now. PDF support coming soon.`);
-      return;
-    }
-    if (file.size > 500000) {
-      setFileError("File too large (max 500 KB). Try a shorter passage.");
-      return;
-    }
-    setFileError(null);
-    onFileUpload(file);
+  const readFile = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onTextChange(String(reader.result ?? ""));
+    reader.readAsText(file);
+  };
+
+  // A dataset document carries its gold annotations alongside the text, so the
+  // overlay can show what the annotators marked. Plain .txt has none, and the
+  // overlay toggle stays disabled rather than silently showing nothing.
+  const readAnnotated = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const doc = JSON.parse(String(reader.result ?? ""));
+        onTextChange(doc.text ?? "");
+        onLoadGold?.(doc.components ?? []);
+      } catch {
+        onTextChange(String(reader.result ?? ""));
+        onLoadGold?.([]);
+      }
+    };
+    reader.readAsText(file);
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div
-        style={{ flex: 1, position: "relative", borderBottom: "1px solid #1A1A1A" }}
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragOver(false);
-          const file = e.dataTransfer.files[0];
-          if (file) validateAndUpload(file);
-        }}
-      >
-        {dragOver && (
-          <div style={{
-            position: "absolute", inset: 0,
-            background: "#D4A57415", border: "2px dashed #D4A57460",
-            borderRadius: "4px", display: "flex",
-            alignItems: "center", justifyContent: "center",
-            zIndex: 10, margin: "8px", pointerEvents: "none",
-          }}>
-            <span style={{ color: "#D4A574", fontSize: "13px", fontWeight: 500 }}>
-              Drop file here
-            </span>
-          </div>
-        )}
-        <textarea
-          value={text}
-          onChange={(e) => { onTextChange(e.target.value); setFileError(null); }}
-          placeholder={"Paste philosophical text here, or drag & drop a .txt file\u2026\n\nTry a passage from Kant's Groundwork, Descartes' Meditations, or any argumentative philosophical text."}
-          style={{
-            width: "100%", height: "100%",
-            background: "transparent", border: "none", outline: "none", resize: "none",
-            padding: "16px", color: "#CCC",
-            fontFamily: "'Newsreader', 'Georgia', serif",
-            fontSize: "14px", lineHeight: "1.75", letterSpacing: "0.01em",
-            boxSizing: "border-box",
-          }}
-        />
-      </div>
+    <div
+      className={`input-panel ${isDragging ? "is-dragging" : ""}`}
+      onDragOver={(event) => {
+        event.preventDefault();
+        setIsDragging(true);
+      }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={(event) => {
+        event.preventDefault();
+        setIsDragging(false);
+        const file = event.dataTransfer.files?.[0];
+        if (file?.name.endsWith(".json")) readAnnotated(file);
+        else readFile(file);
+      }}
+    >
+      <textarea
+        className="input-panel__textarea"
+        value={text}
+        onChange={(event) => onTextChange(event.target.value)}
+        placeholder="Paste an argumentative passage, or drop a .txt file here."
+        spellCheck={false}
+        rows={10}
+      />
 
-      {fileError && (
-        <div style={{
-          padding: "8px 16px", fontSize: "11px", color: "#C47B7B",
-          background: "#C47B7B10", borderBottom: "1px solid #1A1A1A",
-        }}>
-          {fileError}
-        </div>
-      )}
-
-      <div style={{
-        padding: "12px 16px", display: "flex",
-        alignItems: "center", gap: "8px", flexShrink: 0,
-      }}>
+      <div className="input-panel__actions">
         <button
+          type="button"
+          className="button button--primary"
           onClick={onExtract}
           disabled={processing || !text.trim()}
-          style={{
-            flex: 1,
-            background: processing ? "#1A1A1A" : (!text.trim() ? "#1A1A1A" : "#D4A574"),
-            color: processing || !text.trim() ? "#555" : "#0D0D0D",
-            border: "none", padding: "10px 16px", borderRadius: "6px",
-            fontSize: "12px", fontWeight: 600,
-            textTransform: "uppercase", letterSpacing: "0.06em",
-            cursor: processing || !text.trim() ? "default" : "pointer",
-            fontFamily: "'DM Sans', sans-serif", transition: "all 0.2s",
-          }}
         >
-          {processing ? "Extracting arguments\u2026" : "Extract Arguments"}
+          {processing ? "Extracting…" : "Extract"}
+        </button>
+        <button type="button" className="button" onClick={onSample} disabled={processing}>
+          Sample passage
+        </button>
+        <button
+          type="button"
+          className="button"
+          onClick={() => fileRef.current?.click()}
+          disabled={processing}
+        >
+          Open file
         </button>
         <input
-          ref={fileInputRef}
+          ref={fileRef}
           type="file"
-          accept=".txt,.md"
-          onChange={(e) => { const f = e.target.files[0]; if (f) validateAndUpload(f); }}
-          style={{ display: "none" }}
+          accept={[...ACCEPTED, ".json"].join(",")}
+          hidden
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file?.name.endsWith(".json")) readAnnotated(file);
+            else readFile(file);
+            event.target.value = "";
+          }}
         />
-        <button
-          onClick={() => { setFileError(null); onTextChange(SAMPLE_PASSAGE); }}
-          disabled={processing}
-          style={{
-            background: "#141414", color: "#777",
-            border: "1px solid #2A2A2A", padding: "10px 12px",
-            borderRadius: "6px", fontSize: "11px",
-            cursor: processing ? "default" : "pointer",
-            fontFamily: "'DM Sans', sans-serif",
-            transition: "all 0.2s", whiteSpace: "nowrap",
-            opacity: processing ? 0.4 : 1,
-          }}
-        >
-          Sample
-        </button>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          style={{
-            background: "#141414", color: "#777",
-            border: "1px solid #2A2A2A", padding: "10px 12px",
-            borderRadius: "6px", fontSize: "11px",
-            cursor: "pointer", fontFamily: "'DM Sans', sans-serif",
-            transition: "all 0.2s", whiteSpace: "nowrap",
-          }}
-        >
-          Upload
-        </button>
+        <span className="input-panel__count">{text.length.toLocaleString()} chars</span>
       </div>
     </div>
   );
