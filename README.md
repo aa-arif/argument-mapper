@@ -10,7 +10,7 @@ to stop paying for them — F1, dollars, and latency, with confidence intervals,
 on a standard benchmark and an out-of-domain test set.
 
 **The short answer:** in domain, a LoRA fine-tuned Qwen3.5-2B matches Claude
-Sonnet 5 on component extraction within ±0.04 F1, at 186× less per document.
+Sonnet 5 on component extraction within ±0.04 F1, at 229× less per document.
 Out of domain its relation extraction collapses from 0.452 F1 to **0.078**,
 while Sonnet 5 improves. A confidence-routed cascade, with a threshold fitted
 on the in-domain data and never re-tuned, detects that shift on its own and
@@ -204,28 +204,51 @@ offsets. This is why overlap is the headline metric throughout.
 
 ### Cost and latency
 
-API prices are per-document means from the spend ledger
-([`results/cost/`](results/cost/)). The local price is the A10G hourly rate
-divided by **measured** peak throughput from the load test below — not an
-estimate.
+API prices are per-document means from the spend ledger, **scoped to one model
+on one split of one corpus**, written by `argmap.cli.cost_report` to
+[`results/cost/summary.json`](results/cost/). The local price is the A10G
+hourly rate divided by measured throughput from the load test below.
+
+Scoping matters more than it sounds. An AAE essay averages 1,974 characters and
+a microtext 423, so the same model costs roughly twice as much per AAE
+document. Averaging a model's whole ledger — which this repository did until
+the cost table was rebuilt — produces a price that is correct for neither
+corpus and that drifts with how many of each happen to have been run. It put
+Sonnet 5 at $15.81/1K, a blend of $19.51 and $10.70, and understated the
+in-domain ratio by a quarter.
+
+**In domain — Argument Annotated Essays, test split**
 
 | | $/doc | $/1K docs | vs local | p50 latency |
 |---|---|---|---|---|
 | Qwen3.5-2B + LoRA (A10G) | $0.000085 | **$0.09** | — | **5.3 s** |
-| Claude Haiku 4.5 | $0.00398 | $3.98 | 47× | 3.4 s |
-| Claude Sonnet 5 | $0.01581 | $15.81 | **186×** | 10.9 s |
+| Claude Haiku 4.5 | $0.004662 | $4.66 | 55× | 3.4 s |
+| Claude Sonnet 5 | $0.019511 | $19.51 | **229×** | 10.9 s |
+
+**Out of domain — arg-microtexts, test split.** Shorter documents, so both
+routes cost less and the ratios shrink. The local figures are not a like-for-
+like alternative here: at 0.078 relation F1 the cheap route is not usable on
+this corpus at any price.
+
+| | $/doc | $/1K docs | vs local | p50 latency |
+|---|---|---|---|---|
+| Qwen3.5-2B + LoRA (A10G) | $0.000085 | $0.09 | — | — |
+| Claude Haiku 4.5 | $0.001825 | $1.83 | 21× | 1.5 s |
+| Claude Sonnet 5 | $0.010704 | $10.70 | 126× | 7.2 s |
 
 The local model is also roughly **half Sonnet's latency** at concurrency 1.
 
-Two caveats on the ratio, both load-bearing:
+Three caveats on the ratios, all load-bearing:
 
-- **It assumes a busy GPU.** An A10G idling between requests bills the same per
-  hour, so 186× is a batch-workload number and shrinks with utilisation.
-- **It is an in-domain number.** On arg-microtexts the same model scores 0.078
-  relation F1, and the only way to get usable quality there is to escalate
-  70.5% of traffic to the API — which costs $11.21 per 1,000 rather than $0.09.
-  The cost advantage and the quality claim have the same scope, and neither
-  survives leaving the domain alone.
+- **They assume a busy GPU.** An A10G idling between requests bills the same
+  per hour, so 229× is a batch-workload number and shrinks with utilisation.
+- **They are in-domain quality claims.** Out of domain the only route to usable
+  quality is escalating 70.5% of traffic, which costs $7.61 per 1,000 rather
+  than $0.09. The cost advantage and the quality claim have the same scope.
+- **The local price uses served throughput; the cascade tables use batched
+  offline throughput** on the corpus in question, which is the right basis for
+  scoring a split in one job. Both are measured and each names its own; they
+  differ by about 15%.
 
 ### Can a fine-tuned 2B replace the API?
 
@@ -295,7 +318,7 @@ to 0.078 out of it, while Sonnet 5 *gains* (0.485 → 0.676) on the easier,
 shorter texts.
 
 This is the honest shape of the headline. A 258-example fine-tune bought
-in-domain parity with a frontier model at 186× less per document, and bought
+in-domain parity with a frontier model at 229× less per document, and bought
 nothing that survives a change of corpus. The frontier models are being paid
 for generality, and this is the measurement that shows what generality is
 worth. Anyone quoting the in-domain number without this one is quoting half a
@@ -403,16 +426,62 @@ differences do not exclude zero; the eighth is +0.009 [+0.001, +0.019] on
 untyped overlap components — real, and tiny. A model fine-tuned on this format
 emits it unprompted 98.8% of the time.
 
-**Out of domain the guarantee starts earning its keep.** On arg-microtexts the
-unconstrained invalid rate is **7.1% (8/112)**, six times the in-domain rate,
-and every one of those failures is a truncation — the model runs to the token
-cap on text it does not recognise. Format adherence is the first thing a
-fine-tune loses when the domain shifts, which is exactly when a grammar that
-cannot produce malformed output is worth having.
+**Out of domain it is a trade, and it trades quality away.** On arg-microtexts
+the unconstrained run fails to parse on 7.1% of documents (8 of 112, every one
+a truncation) — six times the in-domain rate. It also **scores higher**:
 
-That is why the local route carries **no JSON-repair path** at all. The Claude
-route keeps Pydantic validation and has never needed it either — 550 API calls,
-zero invalid outputs.
+| arg-microtexts (112 docs), overlap untyped | Components | Relations |
+|---|---|---|
+| Constrained | 0.657 | 0.078 |
+| Unconstrained | **0.705** | **0.095** |
+| Paired delta | −0.048 [−0.085, −0.011] | −0.016 [−0.029, −0.004] |
+
+Both exclude zero: constrained decoding is significantly *worse* here. The
+mechanism is over-generation. The grammar can require a well-formed object but
+cannot require a correct one, so on text the model does not recognise it keeps
+emitting components until the schema's `maxItems` stops it — 384 false-positive
+components against the unconstrained run's 238, dropping precision from 0.651
+to 0.550 while recall rises only 0.769 → 0.816.
+
+**But that comparison is unfair to the constrained run, and the correction is
+the interesting part.** A run that fails to parse contributes no predictions at
+all on that document: it costs recall and costs nothing in precision. Scoring
+all 112 documents therefore credits the unconstrained run for the 8 it gave up
+on. Restricted to the 104 both runs actually answered:
+
+| arg-microtexts, 104 docs both answered | Components | Relations |
+|---|---|---|
+| Constrained | 0.716 | 0.092 |
+| Unconstrained | 0.728 | 0.099 |
+| Paired delta | −0.012 [−0.025, −0.001] | −0.007 [−0.018, +0.003] |
+
+The component gap shrinks four-fold and stays significant; the relation gap
+disappears into the noise. So roughly three-quarters of the headline quality
+gap is not the grammar degrading answers — it is the grammar **forcing an
+answer where the model would otherwise have failed loudly**, on its eight
+hardest documents. 129 of the 384 false-positive components come from those
+eight alone.
+
+That is the trade, stated plainly:
+
+- **Constrained**: every document gets a schema-valid answer. On the documents
+  the model cannot handle, that answer is confidently wrong and indistinguishable
+  from a good one downstream.
+- **Unconstrained**: 7.1% of documents produce nothing, which is a *detectable*
+  failure — a parse error is a signal a pipeline can route on, retry, or
+  escalate. The price is that the caller must handle it.
+- On like-for-like documents, the grammar costs about **0.012 F1** on
+  components and nothing measurable on relations.
+
+This project keeps the constraint, because the cascade above gives a better
+answer to "what do we do with documents the model cannot handle" than a parse
+error does: escalate on low confidence, before the output is generated rather
+than after it fails. A pipeline without that escalation path should think
+harder about this table than the in-domain one — a loud failure it can catch is
+worth more than a quiet one it cannot.
+
+The Claude route keeps Pydantic validation and has never needed it: 550 API
+calls, zero invalid outputs.
 
 **Syntax is not termination.** An earlier unbounded schema produced output that
 was well-formed and still unusable: the model emitted the *type name* as each
@@ -433,19 +502,21 @@ the local model's mean token logprob falls below a threshold. The threshold is
 reported results re-tunes it. Full sweeps in
 [`results/cascade/`](results/cascade/).
 
-Cost per document is measured, not estimated: the API price comes from the
-spend ledger and the local price is the A10G hourly rate divided by measured
-batched throughput on the corpus in question.
+Cost per document is measured, not estimated, and **each split is priced
+against its own documents**: the API price is the ledger mean over exactly the
+documents in that split, and the local price is the A10G hourly rate divided by
+batched throughput measured on that split. A sweep on AAE validation and a
+report on arg-microtexts no more share a price than they share a corpus.
 
 **Validation sweep**, AAE val, 64 documents, 22 operating points, scored under
 `overlap>=0.5/typed` — the same criterion checkpoint selection used:
 
 | Escalated | Components | Relations | $/1K docs |
 |---|---|---|---|
-| 0% (local only) | 0.738 | 0.379 | $0.10 |
-| 4.7% (**selected**) | 0.749 | 0.400 | $0.84 |
-| 60.9% (best observed) | 0.768 | 0.461 | $9.73 |
-| 100% (Claude only) | 0.749 | 0.422 | $15.91 |
+| 0% (local only) | 0.738 | 0.379 | $0.09 |
+| 4.7% (**selected**) | 0.749 | 0.400 | $1.02 |
+| 60.9% (best observed) | 0.768 | 0.461 | $12.13 |
+| 100% (Claude only) | 0.749 | 0.422 | $19.83 |
 
 The selection rule is the **cheapest** point whose paired difference against
 the best observed point does not exclude zero.
@@ -459,8 +530,8 @@ local route. Scored under `overlap>=0.5/typed`:
 | Components | −0.006 | [−0.036, +0.025] |
 | Relations | −0.048 | [−0.113, +0.019] |
 
-Neither excludes zero, at **$0.10 per 1,000 documents against $15.91** —
-160× cheaper for quality that is not measurably different. A cascade that
+Neither excludes zero, at **$0.10 per 1,000 documents against $19.61** —
+**197× cheaper** for quality that is not measurably different. A cascade that
 escalates nothing is not a cascade: in domain the finding is that *the routing
 is unnecessary*, because the cheap leg is already good enough.
 
@@ -471,8 +542,8 @@ is unnecessary*, because the cheap leg is already good enough.
 | arg-microtexts (112 docs) | Components | Relations | $/1K docs |
 |---|---|---|---|
 | Local only (0% escalated) | 0.657 | 0.078 | $0.06 |
-| **Cascade (70.5% escalated)** | **0.872** | **0.527** | **$11.21** |
-| Claude Sonnet 5 only | 0.945 | 0.676 | $15.81 |
+| **Cascade (70.5% escalated)** | **0.872** | **0.527** | **$7.61** |
+| Claude Sonnet 5 only | 0.945 | 0.676 | $10.76 |
 
 | Cascade vs | Components | Relations |
 |---|---|---|
