@@ -1,0 +1,95 @@
+{
+  "note": "Costs are scoped to one model on one split of one corpus. Averaging a model's whole ledger blends corpora of different lengths and prices neither.",
+  "local": {
+    "gpu": "A10G",
+    "gpu_usd_per_hour": 1.1,
+    "requests_per_second": 3.589,
+    "documents_per_hour": 12920.4,
+    "usd_per_doc": 8.514e-05,
+    "usd_per_1k": 0.0851,
+    "throughput_source": "results/serving/loadtest.json (highest concurrency tested)"
+  },
+  "by_scope": {
+    "aae-v2/test": {
+      "documents": 80,
+      "claude-haiku-4-5": {
+        "calls": 80,
+        "usd_total": 0.372996,
+        "usd_per_doc": 0.00466245,
+        "usd_per_1k": 4.6625,
+        "vs_local": 54.8
+      },
+      "claude-sonnet-5": {
+        "calls": 80,
+        "usd_total": 1.56089,
+        "usd_per_doc": 0.01951113,
+        "usd_per_1k": 19.5111,
+        "vs_local": 229.2
+      }
+    },
+    "aae-v2/train": {
+      "documents": 258,
+      "claude-haiku-4-5": {
+        "calls": 0,
+        "usd_per_doc": null,
+        "usd_per_1k": null
+      },
+      "claude-sonnet-5": {
+        "calls": 0,
+        "usd_per_doc": null,
+        "usd_per_1k": null
+      }
+    },
+    "aae-v2/val": {
+      "documents": 64,
+      "claude-haiku-4-5": {
+        "calls": 100,
+        "usd_total": 0.58056,
+        "usd_per_doc": 0.0058056,
+        "usd_per_1k": 5.8056,
+        "vs_local": 68.2
+      },
+      "claude-sonnet-5": {
+        "calls": 64,
+        "usd_total": 1.263108,
+        "usd_per_doc": 0.01973606,
+        "usd_per_1k": 19.7361,
+        "vs_local": 231.8
+      }
+    },
+    "microtexts-en/test": {
+      "documents": 112,
+      "claude-haiku-4-5": {
+        "calls": 112,
+        "usd_total": 0.204429,
+        "usd_per_doc": 0.00182526,
+        "usd_per_1k": 1.8253,
+        "vs_local": 21.4
+      },
+      "claude-sonnet-5": {
+        "calls": 112,
+        "usd_total": 1.198838,
+        "usd_per_doc": 0.01070391,
+        "usd_per_1k": 10.7039,
+        "vs_local": 125.7
+      }
+    }
+  },
+  "unscoped_rows": {
+    "calls": 2,
+    "usd_total": 0.047264,
+    "doc_ids": [
+      "request"
+    ]
+  },
+  "ledger_totals": {
+    "claude-haiku-4-5": {
+      "calls": 293,
+      "usd_total": 1.165115
+    },
+    "claude-sonnet-5": {
+      "calls": 257,
+      "usd_total": 4.06297
+    }
+  }
+}

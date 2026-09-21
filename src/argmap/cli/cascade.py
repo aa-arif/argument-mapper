@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import json
 import statistics
+from collections.abc import Collection
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
@@ -109,17 +110,31 @@ def load_claude(root: Path, stem: str) -> dict[str, Prediction]:
     return out
 
 
-def claude_usd_per_doc(root: Path, model: str) -> float:
-    """Mean dollars per document for a model, from the ledger."""
+def claude_usd_per_doc(root: Path, model: str, doc_ids: Collection[str]) -> float:
+    """Mean dollars per document for a model, over **these documents only**.
+
+    The ledger is one flat file across every run the project ever made, so
+    averaging all of a model's rows blends corpora. Sonnet 5 costs $0.0195 on
+    an AAE essay (1,974 characters on average) and $0.0107 on a microtext
+    (423), and the unfiltered mean of $0.0158 is the price of neither. Every
+    ratio derived from it moved with how many of each corpus had been run,
+    which is not a property of anything being measured.
+
+    Filtering by document id also drops rows the serving layer wrote for ad-hoc
+    requests, which belong to no corpus and no split.
+    """
     ledger = root / "results" / "cost" / "ledger.jsonl"
     if not ledger.exists():
         return 0.0
+    wanted = set(doc_ids)
     costs = [
         float(row.get("dollars", 0.0))
         for line in ledger.read_text(encoding="utf-8").splitlines()
         if line.strip()
         for row in [json.loads(line)]
-        if row.get("model") == model and not row.get("cached")
+        if row.get("model") == model
+        and not row.get("cached")
+        and str(row.get("doc_id", "")) in wanted
     ]
     return statistics.fmean(costs) if costs else 0.0
 
@@ -224,15 +239,36 @@ def main() -> int:
         type=Path,
         default=Path("data/generations/aae-v2_test_constrained.json"),
     )
-    parser.add_argument("--local-docs-per-second", type=float, default=1.487)
+    parser.add_argument(
+        "--local-docs-per-second",
+        type=float,
+        default=1.487,
+        help="measured batched throughput on the SWEEP split",
+    )
+    parser.add_argument(
+        "--report-docs-per-second",
+        type=float,
+        default=None,
+        help=(
+            "measured batched throughput on the REPORT split; defaults to "
+            "--local-docs-per-second. Short documents generate faster, so the "
+            "two splits do not share a local price any more than they share an "
+            "API price."
+        ),
+    )
     args = parser.parse_args()
 
     report_corpus = args.report_corpus or args.corpus
-    claude_cost = claude_usd_per_doc(args.root, args.claude_model)
     local_cost = local_usd_per_doc(args.local_docs_per_second)
+    report_local_rate = args.report_docs_per_second or args.local_docs_per_second
+    report_local_cost = local_usd_per_doc(report_local_rate)
 
     # ---- sweep on validation -------------------------------------------------
     val_docs = load_split(args.root, args.corpus, args.sweep_split)
+    # Price each split against its own documents. The sweep and the report can
+    # now be different corpora, whose documents differ in length by a factor of
+    # five, so a single blended API price would be wrong for both.
+    claude_cost = claude_usd_per_doc(args.root, args.claude_model, [d.doc_id for d in val_docs])
     val_local, val_conf = load_local(args.root / args.local_val, val_docs)
     val_claude = load_claude(args.root, f"{args.claude_model}_{args.corpus}_{args.sweep_split}")
 
@@ -306,6 +342,9 @@ def main() -> int:
     # reported under is not always the one the threshold was chosen under. Both
     # labels go into the output rather than being resolved silently.
     report_criterion = criterion_for(test_docs)
+    report_claude_cost = claude_usd_per_doc(
+        args.root, args.claude_model, [d.doc_id for d in test_docs]
+    )
 
     threshold = chosen.threshold if chosen else float("inf")
     test_point, test_comp, test_rel = evaluate(
@@ -314,18 +353,18 @@ def main() -> int:
         test_claude,
         test_conf,
         threshold,
-        local_cost=local_cost,
-        claude_cost=claude_cost,
+        local_cost=report_local_cost,
+        claude_cost=report_claude_cost,
         criterion=report_criterion,
     )
-    _, test_ceiling_comp, test_ceiling_rel = evaluate(
+    test_ceiling, test_ceiling_comp, test_ceiling_rel = evaluate(
         test_docs,
         test_local,
         test_claude,
         test_conf,
         float("inf"),
-        local_cost=local_cost,
-        claude_cost=claude_cost,
+        local_cost=report_local_cost,
+        claude_cost=report_claude_cost,
         criterion=report_criterion,
     )
     # Never escalating is the other reference point. A cascade has to beat both
@@ -337,8 +376,8 @@ def main() -> int:
         test_claude,
         test_conf,
         float("-inf"),
-        local_cost=local_cost,
-        claude_cost=claude_cost,
+        local_cost=report_local_cost,
+        claude_cost=report_claude_cost,
         criterion=report_criterion,
     )
 
@@ -352,10 +391,14 @@ def main() -> int:
         "report_criterion": report_criterion.label,
         "claude_model": args.claude_model,
         "costs": {
-            "claude_usd_per_doc": round(claude_cost, 6),
-            "local_usd_per_doc": round(local_cost, 8),
+            "claude_usd_per_doc_sweep": round(claude_cost, 6),
+            "claude_usd_per_doc_report": round(report_claude_cost, 6),
+            "local_usd_per_doc_sweep": round(local_cost, 8),
+            "local_usd_per_doc_report": round(report_local_cost, 8),
             "gpu_usd_per_hour": GPU_USD_PER_HOUR,
-            "local_docs_per_second": args.local_docs_per_second,
+            "local_docs_per_second_sweep": args.local_docs_per_second,
+            "local_docs_per_second_report": report_local_rate,
+            "local_cost_basis": "batched offline generation on the split in question",
         },
         "validation_sweep": [p.as_dict() for p in sweep],
         "validation_claude_only": ceiling.as_dict(),
@@ -377,6 +420,7 @@ def main() -> int:
             "vs_local_only_components": paired_bootstrap_delta(test_comp, local_comp).as_dict(),
             "vs_local_only_relations": paired_bootstrap_delta(test_rel, local_rel).as_dict(),
             "local_only": local_only.as_dict(),
+            "claude_only": test_ceiling.as_dict(),
         },
     }
 
@@ -387,7 +431,11 @@ def main() -> int:
         json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n"
     )
 
-    print(f"cost per document: local ${local_cost:.6f}  {args.claude_model} ${claude_cost:.4f}\n")
+    print(
+        f"cost per document: local ${local_cost:.6f}  "
+        f"{args.claude_model} ${claude_cost:.4f} (sweep) "
+        f"${report_claude_cost:.4f} (report)\n"
+    )
     print(f"validation sweep ({len(val_docs)} docs)")
     print(f"  {'threshold':>11}{'escalated':>11}{'comp F1':>10}{'rel F1':>9}{'$/1k':>10}")
     for point in sweep:
