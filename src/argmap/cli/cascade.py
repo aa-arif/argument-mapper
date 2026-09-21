@@ -229,7 +229,7 @@ def main() -> int:
 
     # Claude-only is the ceiling the cascade is trying to match: every document
     # escalated.
-    ceiling, ceiling_comp, _ = evaluate(
+    ceiling, _, _ = evaluate(
         val_docs,
         val_local,
         val_claude,
@@ -240,6 +240,23 @@ def main() -> int:
     )
 
     # ---- choose an operating point on validation ----------------------------
+    #
+    # The reference is the *best point in the sweep*, not Claude-only. An
+    # earlier version assumed escalating everything was the quality ceiling;
+    # once the local model matches or beats the API leg that is false, and the
+    # assumption silently selected an expensive point that was also worse.
+    # Referencing the best observed point works either way.
+    best = max(sweep, key=lambda p: p.component_f1)
+    _, best_comp, _ = evaluate(
+        val_docs,
+        val_local,
+        val_claude,
+        val_conf,
+        best.threshold,
+        local_cost=local_cost,
+        claude_cost=claude_cost,
+    )
+
     chosen = None
     for point in sorted(sweep, key=lambda p: p.usd_per_1k):
         _, comp, _ = evaluate(
@@ -251,9 +268,10 @@ def main() -> int:
             local_cost=local_cost,
             claude_cost=claude_cost,
         )
-        delta = paired_bootstrap_delta(comp, ceiling_comp)
-        # "Matches Claude within its interval" means the paired difference does
-        # not exclude zero -- not that two marginal intervals happen to overlap.
+        delta = paired_bootstrap_delta(comp, best_comp)
+        # Cheapest point that is not significantly worse than the best one.
+        # "Not significantly worse" means the paired difference does not
+        # exclude zero -- not that two marginal intervals happen to overlap.
         if not delta.excludes_zero:
             chosen = point
             break
@@ -296,7 +314,8 @@ def main() -> int:
             "local_docs_per_second": args.local_docs_per_second,
         },
         "validation_sweep": [p.as_dict() for p in sweep],
-        "validation_ceiling": ceiling.as_dict(),
+        "validation_claude_only": ceiling.as_dict(),
+        "validation_best_point": best.as_dict(),
         "selected_threshold": None if chosen is None else round(chosen.threshold, 6),
         "selected_on": args.sweep_split,
         "test": {
