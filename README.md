@@ -22,7 +22,7 @@ Every number below is produced by a script in this repository and written under
 | 2. Frontier baselines (Sonnet 5, Haiku 4.5) | ✅ complete |
 | 3. LoRA fine-tune (Qwen3.5-2B) | ✅ complete |
 | 4. Constrained decoding (vLLM JSON schema) | ✅ complete |
-| 5. Cascade routing | ⬜ |
+| 5. Cascade routing | ✅ complete |
 | 6. Serving and load test | ⬜ |
 | 7. UI | ✅ complete |
 | 8. DeBERTa-v3 baseline (stretch) | ⬜ |
@@ -254,9 +254,47 @@ made a property of the grammar — `maxItems` — and the bound must be reachabl
 0.003 to 0.028. That it only reached 0.028 is the clearest evidence that the
 remaining relation failure is structural rather than a formatting artefact.
 
-### Cascade operating points
+### Cascade routing
 
-`TBD` — milestone 5.
+Run the fine-tuned model on everything; escalate to Claude Haiku 4.5 only where
+the local model's mean token logprob falls below a threshold. The threshold is
+**swept on validation and reported once on test**. Full sweep in
+[`results/cascade/`](results/cascade/).
+
+Cost per document is measured, not estimated: the API price comes from the
+spend ledger, and the local price is the A10G hourly rate divided by measured
+batched throughput ($0.000205/doc at 1.49 docs/s).
+
+| Escalated | Component F1 | Relation F1 | $/1K docs |
+|---|---|---|---|
+| 0% (local only) | 0.483 | 0.028 | $0.21 |
+| 38% | 0.551 | 0.116 | $1.70 |
+| 80% | 0.604 | 0.261 | $3.37 |
+| 100% (Claude only) | 0.659 | 0.350 | $4.18 |
+
+**The threshold selected on validation does not transfer to test.** At the
+chosen operating point, validation said the cascade matched Claude-only within
+its interval. Test says otherwise:
+
+| | Delta vs Claude-only | 95% CI |
+|---|---|---|
+| Components | −0.056 | [−0.094, −0.025] |
+| Relations | −0.093 | [−0.142, −0.046] |
+
+Both intervals exclude zero. The cascade saves **19%** of cost and is
+**measurably worse**, so the headline claim a cascade is supposed to
+support — same quality, less money — is not available here.
+
+That is the finding, and it is the reason the sweep ran on validation. Had the
+threshold been picked on test, the table above would have shown a flattering
+operating point that does not exist. With 64 validation documents and a weak
+local leg, the threshold fits the validation draw rather than a real property
+of the confidence signal.
+
+**Why the saving is small.** A cascade pays in proportion to the traffic its
+cheap leg can keep. This one reaches component F1 0.518 against Claude's 0.709,
+so it holds about 20% of documents before quality falls away — and 20% of the
+traffic is 20% of the bill. A cascade is only as good as its cheap model.
 
 ### Throughput
 
