@@ -267,11 +267,26 @@ def prompt_fingerprint(exemplars: Sequence[dict[str, object]]) -> str:
     return f"{PROMPT_VERSION}-{digest}"
 
 
-#: Generous bounds taken from the corpus: the densest essay has 28 components
-#: and 20 relations. Doubling that leaves ample headroom while still forcing a
-#: grammar that must terminate.
-MAX_COMPONENTS = 60
-MAX_RELATIONS = 60
+#: Bounds sized so the grammar terminates *within the token budget*, which is
+#: the part that is easy to get wrong.
+#:
+#: The densest essay in the corpus has 28 components and 20 relations, so these
+#: never constrain a plausible answer. An earlier attempt used 60/60 on the
+#: reasoning that more headroom is safer; it is not. A component entry costs
+#: roughly 50 tokens and a relation roughly 25, so 60 relations alone is ~1,500
+#: tokens on top of the components -- the model hit the 2,048-token cap and
+#: truncated before the grammar ever required a closing bracket, which is
+#: indistinguishable from having no bound at all.
+MAX_COMPONENTS = 30
+MAX_RELATIONS = 22
+
+#: Component ids must look like c1..c99. Enforced in the grammar rather than
+#: only asked for in the prompt, because an undertrained model ignored the
+#: convention entirely and emitted the *type name* as every component's id --
+#: 16 components under 3 distinct ids, which makes relations unresolvable no
+#: matter how good the component extraction is. A pattern cannot guarantee
+#: uniqueness, but it removes the failure mode where ids are not identifiers.
+COMPONENT_ID_PATTERN = r"^c[0-9]{1,2}$"
 
 
 def bounded_graph_schema(
@@ -302,4 +317,28 @@ def bounded_graph_schema(
             field = cast("dict[str, Any]", properties).get(name)
             if isinstance(field, dict):
                 cast("dict[str, Any]", field)["maxItems"] = limit
+
+    # Constrain ids to the trained convention. Pydantic nests the item schema
+    # under $defs, so patch it there.
+    defs = schema.get("$defs")
+    if isinstance(defs, dict):
+        component = cast("dict[str, Any]", defs).get("RawComponent")
+        if isinstance(component, dict):
+            props = cast("dict[str, Any]", component).get("properties")
+            if isinstance(props, dict):
+                ident = cast("dict[str, Any]", props).get("id")
+                if isinstance(ident, dict):
+                    cast("dict[str, Any]", ident)["pattern"] = COMPONENT_ID_PATTERN
+        for rel_name in ("RawRelation",):
+            relation = cast("dict[str, Any]", defs).get(rel_name)
+            if not isinstance(relation, dict):
+                continue
+            props = cast("dict[str, Any]", relation).get("properties")
+            if not isinstance(props, dict):
+                continue
+            for endpoint in ("src", "tgt"):
+                field = cast("dict[str, Any]", props).get(endpoint)
+                if isinstance(field, dict):
+                    cast("dict[str, Any]", field)["pattern"] = COMPONENT_ID_PATTERN
+
     return schema

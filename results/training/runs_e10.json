@@ -1,0 +1,287 @@
+[
+  {
+    "base_model": "Qwen/Qwen3.5-2B",
+    "run_tag": "e10",
+    "seed": 0,
+    "hyperparameters": {
+      "lora_r": 16,
+      "lora_alpha": 32,
+      "lora_dropout": 0.05,
+      "learning_rate": 0.0002,
+      "epochs": 10,
+      "batch_size": 1,
+      "grad_accum": 8,
+      "max_seq_length": 3072
+    },
+    "trainable_parameters": 10911744,
+    "total_parameters": 1892736832,
+    "trainable_fraction": 0.005765,
+    "lora_target_module_count": 96,
+    "train_documents": 258,
+    "val_documents": 64,
+    "train_seconds": 3669.9,
+    "gpu": "A10G",
+    "checkpoints": [
+      {
+        "epoch": 1,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed0/epoch1",
+        "eval_loss": 0.6953579783439636,
+        "eval_mean_token_accuracy": 0.8486374020576477,
+        "train_loss": 0.6978799819946289
+      },
+      {
+        "epoch": 2,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed0/epoch2",
+        "eval_loss": 0.6843582391738892,
+        "eval_mean_token_accuracy": 0.8508191481232643,
+        "train_loss": 0.6366485595703125
+      },
+      {
+        "epoch": 3,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed0/epoch3",
+        "eval_loss": 0.688249409198761,
+        "eval_mean_token_accuracy": 0.84978798776865,
+        "train_loss": 0.6042105197906494
+      },
+      {
+        "epoch": 4,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed0/epoch4",
+        "eval_loss": 0.7005024552345276,
+        "eval_mean_token_accuracy": 0.8493639230728149,
+        "train_loss": 0.5679859161376953
+      },
+      {
+        "epoch": 5,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed0/epoch5",
+        "eval_loss": 0.7293890118598938,
+        "eval_mean_token_accuracy": 0.8469813764095306,
+        "train_loss": 0.4986865043640137
+      },
+      {
+        "epoch": 6,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed0/epoch6",
+        "eval_loss": 0.7600306868553162,
+        "eval_mean_token_accuracy": 0.8452316522598267,
+        "train_loss": 0.4114828586578369
+      },
+      {
+        "epoch": 7,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed0/epoch7",
+        "eval_loss": 0.8073728084564209,
+        "eval_mean_token_accuracy": 0.842579647898674,
+        "train_loss": 0.3469520568847656
+      },
+      {
+        "epoch": 8,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed0/epoch8",
+        "eval_loss": 0.872144341468811,
+        "eval_mean_token_accuracy": 0.8398291319608688,
+        "train_loss": 0.30709004402160645
+      },
+      {
+        "epoch": 9,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed0/epoch9",
+        "eval_loss": 0.9084586501121521,
+        "eval_mean_token_accuracy": 0.8381599560379982,
+        "train_loss": 0.31324608325958253
+      },
+      {
+        "epoch": 10,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed0/epoch10",
+        "eval_loss": 0.9355631470680237,
+        "eval_mean_token_accuracy": 0.837204247713089,
+        "train_loss": 0.3155442476272583
+      }
+    ]
+  },
+  {
+    "base_model": "Qwen/Qwen3.5-2B",
+    "run_tag": "e10",
+    "seed": 1,
+    "hyperparameters": {
+      "lora_r": 16,
+      "lora_alpha": 32,
+      "lora_dropout": 0.05,
+      "learning_rate": 0.0002,
+      "epochs": 10,
+      "batch_size": 1,
+      "grad_accum": 8,
+      "max_seq_length": 3072
+    },
+    "trainable_parameters": 10911744,
+    "total_parameters": 1892736832,
+    "trainable_fraction": 0.005765,
+    "lora_target_module_count": 96,
+    "train_documents": 258,
+    "val_documents": 64,
+    "train_seconds": 3774.1,
+    "gpu": "A10G",
+    "checkpoints": [
+      {
+        "epoch": 1,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed1/epoch1",
+        "eval_loss": 0.6948233842849731,
+        "eval_mean_token_accuracy": 0.8487572744488716,
+        "train_loss": 0.6659642219543457
+      },
+      {
+        "epoch": 2,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed1/epoch2",
+        "eval_loss": 0.6841251850128174,
+        "eval_mean_token_accuracy": 0.8506825193762779,
+        "train_loss": 0.6573971271514892
+      },
+      {
+        "epoch": 3,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed1/epoch3",
+        "eval_loss": 0.6877545118331909,
+        "eval_mean_token_accuracy": 0.8506878241896629,
+        "train_loss": 0.6130298137664795
+      },
+      {
+        "epoch": 4,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed1/epoch4",
+        "eval_loss": 0.701652467250824,
+        "eval_mean_token_accuracy": 0.8490436598658562,
+        "train_loss": 0.562598705291748
+      },
+      {
+        "epoch": 5,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed1/epoch5",
+        "eval_loss": 0.727762758731842,
+        "eval_mean_token_accuracy": 0.8471908867359161,
+        "train_loss": 0.4960770130157471
+      },
+      {
+        "epoch": 6,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed1/epoch6",
+        "eval_loss": 0.7696365118026733,
+        "eval_mean_token_accuracy": 0.8446743190288544,
+        "train_loss": 0.3932161331176758
+      },
+      {
+        "epoch": 7,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed1/epoch7",
+        "eval_loss": 0.8231036067008972,
+        "eval_mean_token_accuracy": 0.8426944091916084,
+        "train_loss": 0.34927754402160643
+      },
+      {
+        "epoch": 8,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed1/epoch8",
+        "eval_loss": 0.8748920559883118,
+        "eval_mean_token_accuracy": 0.8397626727819443,
+        "train_loss": 0.31564033031463623
+      },
+      {
+        "epoch": 9,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed1/epoch9",
+        "eval_loss": 0.9095991849899292,
+        "eval_mean_token_accuracy": 0.8385761752724648,
+        "train_loss": 0.3137810707092285
+      },
+      {
+        "epoch": 10,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed1/epoch10",
+        "eval_loss": 0.9345700740814209,
+        "eval_mean_token_accuracy": 0.8373010233044624,
+        "train_loss": 0.2892462730407715
+      }
+    ]
+  },
+  {
+    "base_model": "Qwen/Qwen3.5-2B",
+    "run_tag": "e10",
+    "seed": 2,
+    "hyperparameters": {
+      "lora_r": 16,
+      "lora_alpha": 32,
+      "lora_dropout": 0.05,
+      "learning_rate": 0.0002,
+      "epochs": 10,
+      "batch_size": 1,
+      "grad_accum": 8,
+      "max_seq_length": 3072
+    },
+    "trainable_parameters": 10911744,
+    "total_parameters": 1892736832,
+    "trainable_fraction": 0.005765,
+    "lora_target_module_count": 96,
+    "train_documents": 258,
+    "val_documents": 64,
+    "train_seconds": 3713.2,
+    "gpu": "A10G",
+    "checkpoints": [
+      {
+        "epoch": 1,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed2/epoch1",
+        "eval_loss": 0.6949453353881836,
+        "eval_mean_token_accuracy": 0.8484818264842033,
+        "train_loss": 0.6857988834381104
+      },
+      {
+        "epoch": 2,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed2/epoch2",
+        "eval_loss": 0.6854753494262695,
+        "eval_mean_token_accuracy": 0.8503661081194878,
+        "train_loss": 0.6758128643035889
+      },
+      {
+        "epoch": 3,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed2/epoch3",
+        "eval_loss": 0.687048614025116,
+        "eval_mean_token_accuracy": 0.8507843017578125,
+        "train_loss": 0.6394043922424316
+      },
+      {
+        "epoch": 4,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed2/epoch4",
+        "eval_loss": 0.7031644582748413,
+        "eval_mean_token_accuracy": 0.8491639569401741,
+        "train_loss": 0.558094596862793
+      },
+      {
+        "epoch": 5,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed2/epoch5",
+        "eval_loss": 0.7258914113044739,
+        "eval_mean_token_accuracy": 0.8469214513897896,
+        "train_loss": 0.4917471885681152
+      },
+      {
+        "epoch": 6,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed2/epoch6",
+        "eval_loss": 0.7608104944229126,
+        "eval_mean_token_accuracy": 0.8450315743684769,
+        "train_loss": 0.4342812061309814
+      },
+      {
+        "epoch": 7,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed2/epoch7",
+        "eval_loss": 0.8165134787559509,
+        "eval_mean_token_accuracy": 0.8427499011158943,
+        "train_loss": 0.3881757497787476
+      },
+      {
+        "epoch": 8,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed2/epoch8",
+        "eval_loss": 0.8588723540306091,
+        "eval_mean_token_accuracy": 0.8403246477246284,
+        "train_loss": 0.33405117988586425
+      },
+      {
+        "epoch": 9,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed2/epoch9",
+        "eval_loss": 0.8954541683197021,
+        "eval_mean_token_accuracy": 0.8385468944907188,
+        "train_loss": 0.313097620010376
+      },
+      {
+        "epoch": 10,
+        "path": "/models/adapters/Qwen__Qwen3.5-2B/e10/seed2/epoch10",
+        "eval_loss": 0.916565477848053,
+        "eval_mean_token_accuracy": 0.8377810642123222,
+        "train_loss": 0.3395672798156738
+      }
+    ]
+  }
+]

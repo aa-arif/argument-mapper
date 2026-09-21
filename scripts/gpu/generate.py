@@ -41,16 +41,57 @@ def generate(
     prompts: list[dict[str, object]],
     adapters: list[str] | None = None,
     json_schema: dict[str, object] | None = None,
-    max_tokens: int = 2048,
-    max_model_len: int = 4096,
+    # Headroom for the densest plausible answer under the bounded schema:
+    # ~30 components at ~50 tokens plus ~22 relations at ~25 is ~2,050, so
+    # 2,048 left no room for the grammar to close the object.
+    max_tokens: int = 3072,
+    max_model_len: int = 5120,
     max_lora_rank: int = 32,
+    out_path: str | None = None,
 ) -> dict[str, object]:
     """Generate completions for every prompt, once per adapter.
 
     `prompts` are `{"doc_id": str, "messages": [...]}` records -- the training
     chat shape minus the assistant turn. `adapters` may be empty or None to run
     the base model alone.
+
+    Errors are returned as text rather than raised. A vLLM exception cannot be
+    unpickled on a machine without vLLM installed, so raising it produces
+    "Deserialization failed because the 'vllm' module is not available" and the
+    real cause -- which vLLM had already logged clearly -- is lost.
     """
+    import traceback
+
+    try:
+        return _generate(
+            model_path,
+            prompts,
+            adapters,
+            json_schema,
+            max_tokens,
+            max_model_len,
+            max_lora_rank,
+            out_path,
+        )
+    except BaseException as exc:
+        return {
+            "error": f"{type(exc).__name__}: {exc}",
+            "traceback": traceback.format_exc()[-3000:],
+            "model_path": model_path,
+            "adapters": list(adapters or []),
+        }
+
+
+def _generate(
+    model_path: str,
+    prompts: list[dict[str, object]],
+    adapters: list[str] | None,
+    json_schema: dict[str, object] | None,
+    max_tokens: int,
+    max_model_len: int,
+    max_lora_rank: int,
+    out_path: str | None,
+) -> dict[str, object]:
     from vllm import LLM, SamplingParams
     from vllm.lora.request import LoRARequest
 
@@ -134,4 +175,28 @@ def generate(
     }
     # JSON round-trip: vLLM returns its own types, and unpickling them locally
     # would require vllm installed on a machine that has no GPU.
-    return json.loads(json.dumps(payload, default=str))
+    payload = json.loads(json.dumps(payload, default=str))
+
+    if out_path is None:
+        return payload
+
+    # Generated text for a dozen checkpoints runs to several megabytes, which
+    # is large enough that returning it over gRPC drops the stream
+    # ("StreamTerminatedError: Connection lost") *after* the GPU work is done.
+    # Writing to the volume and returning a summary keeps the result durable
+    # and the response small.
+    from pathlib import Path
+
+    target = Path(out_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(payload), encoding="utf-8")
+    MODELS_VOLUME.commit()
+
+    return {
+        "written_to": out_path,
+        "bytes": target.stat().st_size,
+        "model_path": model_path,
+        "constrained": json_schema is not None,
+        "load_seconds": payload["load_seconds"],
+        "runs": [{k: v for k, v in run.items() if k != "results"} for run in runs],
+    }

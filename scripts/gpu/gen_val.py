@@ -13,11 +13,10 @@ Only the validation split is read. Nothing here can see test.
 
 from __future__ import annotations
 
-import json
 import pathlib
 
 from generate import generate
-from modal_common import MODELS_DIR, app
+from modal_common import MODELS_DIR, MODELS_VOLUME, app
 
 BASE_MODEL = "Qwen/Qwen3.5-2B"
 SEEDS = (0, 1, 2)
@@ -59,18 +58,27 @@ def main(
     mode = "constrained" if constrained else "unconstrained"
     print(f"{len(prompts)} {split} documents x {len(adapters)} checkpoints ({mode})")
 
-    payload = generate.remote(
+    # Written to the volume rather than returned. A dozen checkpoints of
+    # generated text is several megabytes, which is enough to drop the gRPC
+    # stream -- "StreamTerminatedError: Connection lost" -- *after* the GPU
+    # work has already succeeded, wasting the whole run on transport.
+    remote_name = f"generations/{out_name}.json"
+    summary = generate.remote(
         model_path=base_model,
         prompts=prompts,
         adapters=adapters,
         json_schema=bounded_graph_schema() if constrained else None,
+        out_path=f"{MODELS_DIR}/{remote_name}",
     )
 
     out = root / "data" / "generations" / f"{out_name}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    with out.open("wb") as fh:
+        for chunk in MODELS_VOLUME.read_file(remote_name):
+            fh.write(chunk)
+    payload = summary
 
-    print(f"\nengine load {payload['load_seconds']}s")
+    print(f"\nengine load {payload['load_seconds']}s  ({summary['bytes'] / 1e6:.1f} MB downloaded)")
     for run in payload["runs"]:
         name = (run["adapter"] or "base").split("/")[-3:]
         print(

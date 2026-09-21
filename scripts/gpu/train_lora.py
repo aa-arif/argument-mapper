@@ -288,7 +288,10 @@ def main(
         train.starmap([(train_blob, val_blob, base_model, seed, hp, run_tag) for seed in seed_list])
     )
 
-    out = root / "results" / "training" / "runs.json"
+    # Tagged: an untagged name let the 10-epoch run overwrite the 3-epoch
+    # run's record, which is the same clobbering already fixed for adapters
+    # and baselines.
+    out = root / "results" / "training" / f"runs_{run_tag}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(results, indent=2, default=str) + "\n", encoding="utf-8")
 

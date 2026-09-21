@@ -267,3 +267,29 @@ def test_bounded_schema_limits_exceed_the_corpus() -> None:
 
     assert MAX_COMPONENTS > 28
     assert MAX_RELATIONS > 20
+
+
+#: Rough token cost of one rendered entry, measured from real generations.
+_TOKENS_PER_COMPONENT = 50
+_TOKENS_PER_RELATION = 25
+
+#: The generation cap in scripts/gpu/generate.py.
+_MAX_OUTPUT_TOKENS = 3072
+
+
+def test_bounded_schema_fits_inside_the_token_budget() -> None:
+    """A bound the model cannot reach before the token cap is no bound at all.
+
+    An earlier attempt used 60/60, reasoning that more headroom is safer. It is
+    not: 60 relations alone is ~1,500 tokens on top of the components, so
+    generation hit the cap and truncated before the grammar ever required a
+    closing bracket -- indistinguishable from having no bound. The limits must
+    be reachable *within* the budget for termination to be enforceable.
+    """
+    from argmap.prompts import MAX_COMPONENTS, MAX_RELATIONS
+
+    worst_case = MAX_COMPONENTS * _TOKENS_PER_COMPONENT + MAX_RELATIONS * _TOKENS_PER_RELATION
+    assert worst_case < _MAX_OUTPUT_TOKENS, (
+        f"a maximal answer needs ~{worst_case} tokens but the cap is "
+        f"{_MAX_OUTPUT_TOKENS}; the grammar could never close the object"
+    )

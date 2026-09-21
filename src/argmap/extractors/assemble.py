@@ -41,12 +41,16 @@ class AssemblyStats:
     malformed_components: int = 0
     #: Relations pointing at a component id that was never emitted or survived.
     dangling_relations: int = 0
+    #: Components whose stated id had already been used. A high count means the
+    #: model is not numbering components, which caps relation quality.
+    duplicate_ids: int = 0
 
     def as_meta(self) -> dict[str, object]:
         return {
             "unalignable_components": self.unalignable,
             "malformed_components": self.malformed_components,
             "dangling_relations": self.dangling_relations,
+            "duplicate_ids": self.duplicate_ids,
         }
 
 
@@ -91,8 +95,12 @@ def graph_to_prediction(
     """Align each component's text to a span and assemble the prediction."""
     components: list[Component] = []
     resolved: set[str] = set()
+    #: stated id -> the id actually assigned to its first occurrence, so a
+    #: relation naming a duplicated id resolves somewhere deterministic.
+    first_use: dict[str, str] = {}
     unalignable = 0
     malformed = 0
+    duplicate_ids = 0
 
     raw_components, skipped = _object_list(graph.get("components"))
     malformed += skipped
@@ -115,10 +123,18 @@ def graph_to_prediction(
             unalignable += 1
             continue
 
-        component_id = str(raw.get("id") or f"c{index + 1}")
+        # A duplicated id is a naming failure, not an extraction failure.
+        # Dropping the component would charge component F1 for a mistake that
+        # only affects relations -- one undertrained model emitted 16 correct
+        # components under 3 distinct ids, and discarding duplicates threw away
+        # 13 of them. Keep the component under a minted id; the ambiguity is
+        # paid for below, in relation resolution, where it actually bites.
+        stated_id = str(raw.get("id") or f"c{index + 1}")
+        component_id = stated_id
         if component_id in resolved:
-            malformed += 1
-            continue
+            duplicate_ids += 1
+            component_id = f"{stated_id}#{index + 1}"
+        first_use.setdefault(stated_id, component_id)
 
         components.append(
             Component(
@@ -136,7 +152,11 @@ def graph_to_prediction(
     raw_relations, skipped_relations = _object_list(graph.get("relations"))
     dangling += skipped_relations
     for index, raw in enumerate(raw_relations):
-        src, tgt = str(raw.get("src", "")), str(raw.get("tgt", ""))
+        # Resolve through first_use so a relation naming a duplicated id
+        # lands on that id's first component rather than being dropped. It is
+        # a guess, and a model that numbers components properly never needs it.
+        src = first_use.get(str(raw.get("src", "")), str(raw.get("src", "")))
+        tgt = first_use.get(str(raw.get("tgt", "")), str(raw.get("tgt", "")))
         raw_type = raw.get("type")
         if src not in resolved or tgt not in resolved or src == tgt:
             dangling += 1
@@ -150,6 +170,7 @@ def graph_to_prediction(
         unalignable=unalignable,
         malformed_components=malformed,
         dangling_relations=dangling,
+        duplicate_ids=duplicate_ids,
     )
     prediction = Prediction(
         doc_id=doc.doc_id,

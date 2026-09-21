@@ -35,7 +35,7 @@ from argmap.schema import Document, Prediction
 SELECTION_CRITERION = MatchCriterion(span="overlap", typed=True)
 
 
-def _predictions_for_run(
+def predictions_for_run(
     docs: list[Document],
     results: list[dict[str, Any]],
 ) -> tuple[dict[str, Prediction], dict[str, int]]:
@@ -96,7 +96,7 @@ def run(root: Path, generations: Path, split: str) -> dict[str, object]:
     ranked: list[dict[str, object]] = []
     for entry in payload["runs"]:
         adapter = entry.get("adapter") or "base"
-        predictions, health = _predictions_for_run(docs, entry["results"])
+        predictions, health = predictions_for_run(docs, entry["results"])
         scores = score_run(docs, predictions)
         ranked.append(
             {
