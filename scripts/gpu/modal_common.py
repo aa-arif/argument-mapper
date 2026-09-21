@@ -78,7 +78,12 @@ TRAIN_IMAGE = (
 _CUDA_HOME = "/usr/local/lib/python3.11/site-packages/nvidia/cu13"
 
 #: Serving with JSON-schema constrained decoding (milestones 4 and 6).
-SERVE_IMAGE = (
+#:
+#: Split into a base and a finished image because Modal requires every
+#: `add_local_*` step to come last: anything that needs an extra pip_install
+#: on top (the load-test image, which adds Locust) has to branch from the
+#: base, not from the finished image.
+_SERVE_BASE = (
     modal.Image.debian_slim(python_version="3.11")
     .pip_install(
         "vllm==0.29.0",
@@ -99,7 +104,14 @@ SERVE_IMAGE = (
             "VLLM_USE_FLASHINFER_SAMPLER": "0",
         }
     )
-    .add_local_python_source("modal_common")
 )
+
+SERVE_IMAGE = _SERVE_BASE.add_local_python_source("modal_common")
+
+
+def serve_image_with(*packages: str) -> modal.Image:
+    """Serving image plus extra packages, with local source added last."""
+    return _SERVE_BASE.pip_install(*packages).add_local_python_source("modal_common")
+
 
 app = modal.App(APP_NAME)

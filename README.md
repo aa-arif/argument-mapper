@@ -23,7 +23,7 @@ Every number below is produced by a script in this repository and written under
 | 3. LoRA fine-tune (Qwen3.5-2B) | ✅ complete |
 | 4. Constrained decoding (vLLM JSON schema) | ✅ complete |
 | 5. Cascade routing | ✅ complete |
-| 6. Serving and load test | ⬜ |
+| 6. Serving and load test | 🟡 stack built, load test not yet run |
 | 7. UI | ✅ complete |
 | 8. DeBERTa-v3 baseline (stretch) | ⬜ |
 
@@ -298,7 +298,43 @@ traffic is 20% of the bill. A cascade is only as good as its cheap model.
 
 ### Throughput
 
-`TBD` — milestone 6.
+`TBD` — the harness is written and the stack runs, but the load test has not
+been executed yet. It was started and stopped mid-startup when the host ran
+low on memory, so there are no partial numbers to report and nothing is quoted
+here.
+
+To produce them:
+
+```bash
+PYTHONIOENCODING=utf-8 uv run --with modal modal run scripts/gpu/loadtest.py
+```
+
+It writes `results/serving/loadtest.json` with throughput and p50/p95/p99 at
+concurrency 1, 2, 4, 8, 16 and 32.
+
+Two things about how it measures, which matter for reading the eventual
+numbers. **Locust runs inside the same container as vLLM**, driving it over
+localhost — running the client from a laptop would have measured a home
+broadband link and the round trip to Modal's region rather than the serving
+system. And it reports the **sampler**: flashinfer's sampler is disabled in
+this image because its bundled CCCL headers do not match the toolkit's `nvcc`,
+so these are PyTorch-native sampler numbers. Decoding is greedy, so output is
+unaffected, but throughput may not be.
+
+Only the local route is load-tested. Driving concurrent load at the Anthropic
+API would spend real money to measure someone else's infrastructure; that
+route's per-request latency is already in the cost table above.
+
+### Running the stack
+
+```bash
+docker compose up                    # API + web, Claude route
+docker compose --profile local up    # adds the fine-tuned model (needs a GPU)
+```
+
+The local profile is opt-in. Without a GPU the API still runs, `/health`
+reports `local: false`, and the front end greys that route out rather than
+offering something that cannot work.
 
 ---
 

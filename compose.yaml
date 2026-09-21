@@ -1,0 +1,80 @@
+# Full stack: API, front end, and optionally the local model.
+#
+#   docker compose up            # API + web, Claude route only
+#   docker compose --profile local up   # also serve the fine-tuned model
+#
+# The local profile is opt-in because it needs an NVIDIA GPU. Without one the
+# API still runs and reports `local: false` from /health, and the front end
+# greys that route out rather than offering something that cannot work.
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # Passed through from the host; never baked into the image.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set ANTHROPIC_API_KEY in .env}
+      ARGMAP_SPEND_CAP_USD: ${ARGMAP_SPEND_CAP_USD:-20.0}
+      CORS_ORIGINS: http://localhost:5173,http://localhost:4173
+      ARGMAP_ROOT: /app
+      # Only set when the local profile is up; /health reports availability
+      # from this, so leaving it unset is what marks the route unavailable.
+      ARGMAP_VLLM_URL: ${ARGMAP_VLLM_URL:-}
+    volumes:
+      # The response cache and the spend ledger persist across restarts. The
+      # ledger especially: a budget that resets when a container restarts is
+      # not a budget.
+      - ./results/cost:/app/results/cost
+      - ./.cache:/app/.cache
+      - ./prompts:/app/prompts:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  web:
+    build:
+      # Root context: the Dockerfile needs docker/nginx.conf, which a
+      # context of web/ could not reach.
+      context: .
+      dockerfile: docker/web.Dockerfile
+      args:
+        VITE_API_URL: http://localhost:8000
+    ports:
+      - "5173:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  vllm:
+    profiles: ["local"]
+    image: vllm/vllm-openai:latest
+    ports:
+      - "8001:8000"
+    command:
+      - --model=Qwen/Qwen3.5-2B
+      - --max-model-len=5120
+      - --dtype=bfloat16
+      - --enable-lora
+      - --max-lora-rank=32
+      - --lora-modules=local=/adapters/current
+    volumes:
+      - ./adapters:/adapters:ro
+      - ${HF_HOME:-~/.cache/huggingface}:/root/.cache/huggingface
+    environment:
+      # flashinfer's bundled CCCL headers do not match the toolkit's nvcc, and
+      # its sampler fails to JIT. Greedy decoding makes the native sampler
+      # equivalent here. See DECISIONS D21.
+      VLLM_USE_FLASHINFER_SAMPLER: "0"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
