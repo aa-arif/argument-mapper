@@ -86,6 +86,7 @@ class ExtractUser(HttpUser):
 def loadtest(
     adapter: str,
     prompts: list[dict[str, object]],
+    merged: str = "",
     concurrency: list[int] | None = None,
     duration: int = DURATION,
     max_tokens: int = 3072,
@@ -94,7 +95,7 @@ def loadtest(
     import traceback
 
     try:
-        return _loadtest(adapter, prompts, concurrency, duration, max_tokens)
+        return _loadtest(adapter, prompts, concurrency, duration, max_tokens, merged)
     except BaseException as exc:
         return {
             "error": f"{type(exc).__name__}: {exc}",
@@ -102,8 +103,31 @@ def loadtest(
         }
 
 
-def _start_server(adapter: str, port: int):  # noqa: ANN202 - subprocess handle
+def _start_server(adapter: str, port: int, merged: str = ""):  # noqa: ANN202
     import subprocess
+
+    # A merged checkpoint is served as a plain model: no --enable-lora, no
+    # adapter machinery. vLLM's dynamic LoRA path silently served base
+    # weights for this architecture, so merged is the only honest way to
+    # measure the fine-tuned model's throughput.
+    if merged:
+        return subprocess.Popen(
+            [
+                "vllm",
+                "serve",
+                merged,
+                "--port",
+                str(port),
+                "--max-model-len",
+                "5120",
+                "--dtype",
+                "bfloat16",
+                "--gpu-memory-utilization",
+                "0.90",
+                "--served-model-name",
+                "local",
+            ],
+        )
 
     # Fixed argv, no shell.
     return subprocess.Popen(
@@ -216,6 +240,7 @@ def _loadtest(
     concurrency: list[int] | None,
     duration: int,
     max_tokens: int,
+    merged: str = "",
 ) -> dict[str, object]:
     from pathlib import Path
 
@@ -227,7 +252,7 @@ def _loadtest(
     Path("/tmp/max_tokens").write_text(str(max_tokens), encoding="utf-8")
     Path("/tmp/locustfile.py").write_text(LOCUSTFILE, encoding="utf-8")
 
-    server = _start_server(adapter, port)
+    server = _start_server(adapter, port, merged)
     try:
         startup_seconds = _wait_healthy(base, server)
 
@@ -249,7 +274,8 @@ def _loadtest(
         json.dumps(
             {
                 "model": BASE_MODEL,
-                "adapter": adapter,
+                "adapter": merged or adapter,
+                "served": "merged weights" if merged else "base + dynamic LoRA",
                 "gpu": GPU_SERVE,
                 "sampler": "pytorch-native (flashinfer sampler disabled)",
                 "driver": "locust 2.42.2, headless, zero wait time, in-container",
@@ -267,7 +293,8 @@ def _loadtest(
 
 @app.local_entrypoint()
 def main(
-    adapter: str = "Qwen__Qwen3.5-2B/e10/seed0/epoch10",
+    adapter: str = "",
+    merged: str = "e10-seed0-epoch10",
     limit: int = 24,
     duration: int = DURATION,
 ) -> None:
@@ -276,7 +303,16 @@ def main(
     from argmap.cli.run_baseline import load_split
     from argmap.train_data import to_messages
 
-    adapter_path = adapter if adapter.startswith(MODELS_DIR) else f"{MODELS_DIR}/adapters/{adapter}"
+    adapter_path = (
+        ""
+        if merged
+        else (adapter if adapter.startswith(MODELS_DIR) else f"{MODELS_DIR}/adapters/{adapter}")
+    )
+    merged_path = (
+        (merged if merged.startswith(MODELS_DIR) else f"{MODELS_DIR}/merged/{merged}")
+        if merged
+        else ""
+    )
 
     root = pathlib.Path(__file__).resolve().parents[2]
     # Drawn from validation: this measures throughput, and reusing test
@@ -284,8 +320,10 @@ def main(
     docs = load_split(root, "aae-v2", "val")[:limit]
     prompts = [{"doc_id": d.doc_id, "messages": to_messages(d, include_answer=False)} for d in docs]
 
-    print(f"load-testing {adapter_path} with {len(prompts)} documents")
-    report = loadtest.remote(adapter=adapter_path, prompts=prompts, duration=duration)
+    print(f"load-testing {merged_path or adapter_path} with {len(prompts)} documents")
+    report = loadtest.remote(
+        adapter=adapter_path, prompts=prompts, duration=duration, merged=merged_path
+    )
 
     if "error" in report:
         print(f"FAILED: {report['error']}")
