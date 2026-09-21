@@ -3,17 +3,29 @@
 Argument Annotated Essays v2 is distributed under an agreement whose clause 2.2
 forbids publishing, redistributing or displaying the data in any form, and this
 repository is public. `.gitignore` is a convention that a single `git add -f`
-defeats; this test is checked in CI and fails the build instead.
+defeats; these tests are checked in CI and fail the build instead.
 
-It inspects what git actually tracks, not what is on disk, so a developer with
+They inspect what git actually tracks, not what is on disk, so a developer with
 the corpora present locally still passes.
+
+Three layers, deliberately overlapping, because the first two each missed a
+real leak once (DECISIONS D30):
+
+1. **paths** -- no corpus file may be tracked. Runs everywhere.
+2. **shape** -- no tracked JSON under `results/` may contain a long free-text
+   string. Runs everywhere, needs no corpus, and is the layer that would have
+   caught a model generation being written into a results file.
+3. **content** -- no tracked file may contain any span of the corpus. Needs the
+   corpus, so it only runs where the data is present.
 """
 
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from pathlib import Path
+from typing import cast
 
 import pytest
 
@@ -25,12 +37,6 @@ _FORBIDDEN_SUBSTRINGS = (
     "arg-microtexts",
 )
 _FORBIDDEN_PREFIXES = ("data/",)
-
-#: How many distinct sentences to sample from the corpus as leak sentinels.
-_SENTINEL_COUNT = 40
-
-#: Minimum sentinel length, so short generic clauses do not false-positive.
-_SENTINEL_MIN_CHARS = 45
 
 
 def _repo_root() -> Path:
@@ -64,43 +70,159 @@ def test_no_corpus_files_are_tracked() -> None:
     )
 
 
-def _sentinels() -> list[str]:
-    """Sample real corpus sentences to search for.
+# ---------------------------------------------------------------------------
+# Layer 2: no free text in results files. Needs no corpus, so it runs in CI.
+# ---------------------------------------------------------------------------
 
-    Deliberately derived from the corpus at runtime rather than hardcoded. A
-    hardcoded sentinel would itself be corpus text living in a tracked file --
-    which is both the thing being guarded against and a guaranteed self-match.
+#: Longest string a results file may hold outside the allowlist. Every
+#: legitimate value in `results/` is an identifier, a label or a short
+#: description; anything longer is prose, and prose in a results file is either
+#: a model generation or a corpus excerpt.
+_MAX_FREE_TEXT_WORDS = 8
+
+#: Keys whose values are written by hand, in this repository, to describe a
+#: run. They are ours to publish. Anything not named here is data.
+_DESCRIPTION_KEYS = frozenset(
+    {
+        "description",
+        "driver",
+        "error",
+        "note",
+        "notes",
+        "sampler",
+        "selection_scalar",
+        "served",
+        "traceback",
+    }
+)
+
+
+def _long_strings(node: object, key: str | None, found: list[tuple[str, int]]) -> None:
+    """Collect (key, word count) for every over-long string, recursively.
+
+    The offending text is deliberately never collected. Putting it in an
+    assertion message would print corpus content into a public CI log, which is
+    the same disclosure the test exists to prevent.
     """
-    processed = _repo_root() / "data" / "processed" / "aae.jsonl"
-    if not processed.exists():
-        return []
+    if isinstance(node, dict):
+        for child_key, value in cast("dict[object, object]", node).items():
+            _long_strings(value, str(child_key), found)
+    elif isinstance(node, list):
+        for value in cast("list[object]", node):
+            # A list inherits its parent's key: {"heads": ["...", "..."]}
+            # must not launder text past the allowlist check.
+            _long_strings(value, key, found)
+    elif isinstance(node, str):
+        if key in _DESCRIPTION_KEYS:
+            return
+        words = len(node.split())
+        if words > _MAX_FREE_TEXT_WORDS:
+            found.append((key or "<root>", words))
 
-    phrases: list[str] = []
-    with processed.open(encoding="utf-8") as fh:
-        for line in fh:
-            if not line.strip():
-                continue
-            doc = json.loads(line)
-            for component in doc.get("components", []):
-                text = str(component.get("text", "")).strip()
-                if len(text) >= _SENTINEL_MIN_CHARS:
-                    phrases.append(text)
-                    break
-            if len(phrases) >= _SENTINEL_COUNT:
-                break
-    return phrases
+
+def _tracked_result_documents() -> list[tuple[str, object]]:
+    root = _repo_root()
+    documents: list[tuple[str, object]] = []
+    for path in _tracked_files():
+        if not path.startswith("results/"):
+            continue
+        if not path.endswith((".json", ".jsonl")):
+            continue
+        text = (root / path).read_text(encoding="utf-8")
+        if path.endswith(".jsonl"):
+            for number, line in enumerate(text.splitlines(), start=1):
+                if line.strip():
+                    documents.append((f"{path}:{number}", json.loads(line)))
+        else:
+            documents.append((path, json.loads(text)))
+    return documents
+
+
+def test_results_files_contain_no_free_text() -> None:
+    """Results files hold measurements, not prose.
+
+    This is the layer that was missing when `probe_adapter_effect.py` wrote
+    model generations -- which quote the essays verbatim -- into
+    `results/diagnostics/adapter_effect.json` on a public repository. A probe
+    may record what a generation *was like*; it may not record what it said.
+    """
+    offenders: list[str] = []
+    for label, payload in _tracked_result_documents():
+        found: list[tuple[str, int]] = []
+        _long_strings(payload, None, found)
+        if found:
+            keys = sorted({key for key, _ in found})
+            longest = max(words for _, words in found)
+            offenders.append(
+                f"{label}: {len(found)} string(s) under {keys}, longest {longest} words"
+            )
+
+    assert not offenders, (
+        "Free text found in results files. Results record measurements; model "
+        "generations and corpus excerpts must be reduced to lengths, counts and "
+        "hashes before they are written (DECISIONS D30). Offenders:\n  " + "\n  ".join(offenders)
+    )
+
+
+# ---------------------------------------------------------------------------
+# Layer 3: no corpus content anywhere. Needs the corpus.
+# ---------------------------------------------------------------------------
+
+#: Length of the token window compared against the corpus. Eight consecutive
+#: words matching an essay exactly is not a coincidence; it is a quotation.
+_SHINGLE_WORDS = 8
+
+_WORD = re.compile(r"[a-z0-9']+")
+
+
+def _shingles(text: str) -> set[str]:
+    """Every window of `_SHINGLE_WORDS` consecutive words, normalised.
+
+    Normalising away case, punctuation and line breaks means a leak survives
+    being reformatted, re-wrapped, or embedded in a JSON string with escaped
+    newlines -- all of which a plain substring search misses.
+    """
+    words = _WORD.findall(text.lower())
+    if len(words) < _SHINGLE_WORDS:
+        return set()
+    return {" ".join(words[i : i + _SHINGLE_WORDS]) for i in range(len(words) - _SHINGLE_WORDS + 1)}
+
+
+def _corpus_shingles() -> set[str]:
+    """Every window in every processed document, both corpora.
+
+    The previous version of this test sampled 40 component strings out of
+    6,089 and matched them as exact substrings. It therefore checked 0.7% of
+    the corpus for one specific kind of leak, and missed the leak that
+    happened. This checks all of it, including the document text around the
+    components, and catches partial quotations rather than only whole ones.
+    """
+    processed = _repo_root() / "data" / "processed"
+    if not processed.exists():
+        return set()
+
+    shingles: set[str] = set()
+    for path in sorted(processed.glob("*.jsonl")):
+        with path.open(encoding="utf-8") as fh:
+            for line in fh:
+                if not line.strip():
+                    continue
+                doc = json.loads(line)
+                shingles |= _shingles(str(doc.get("text", "")))
+                for component in doc.get("components", []):
+                    shingles |= _shingles(str(component.get("text", "")))
+    return shingles
 
 
 @pytest.mark.corpus
 def test_no_corpus_text_appears_in_tracked_files() -> None:
-    """Belt-and-braces net for corpus text pasted into source, fixtures or docs.
+    """Belt-and-braces net for corpus text in source, fixtures, docs or results.
 
     Needs the real corpus to know what to look for, so it is skipped where the
-    data is absent. The path-based guard above, and the equivalent CI job, run
-    everywhere and do not need the data.
+    data is absent. The path and shape guards above run everywhere.
     """
-    sentinels = _sentinels()
-    if not sentinels:
+    corpus = _corpus_shingles()
+    if not corpus:
         pytest.skip("corpus not built; run `uv run argmap-build-datasets`")
 
     root = _repo_root()
@@ -114,10 +236,16 @@ def test_no_corpus_text_appears_in_tracked_files() -> None:
             content = full.read_text(encoding="utf-8", errors="ignore")
         except OSError:
             continue
-        if any(phrase in content for phrase in sentinels):
-            offenders.append(path)
+        overlap = _shingles(content) & corpus
+        if overlap:
+            # Count only. Printing a match would leak the very text the test
+            # is protecting, into a log that is often public.
+            offenders.append(f"{path} ({len(overlap)} matching {_SHINGLE_WORDS}-word spans)")
 
-    assert not offenders, f"corpus text found in tracked files: {offenders}"
+    assert not offenders, (
+        "Corpus text found in tracked files, which the Argument Annotated Essays "
+        f"license forbids publishing: {offenders}"
+    )
 
 
 def test_split_files_carry_ids_only() -> None:
