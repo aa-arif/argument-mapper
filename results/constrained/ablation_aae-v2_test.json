@@ -221,5 +221,213 @@
         "significant": false
       }
     }
+  },
+  "both_parsed": {
+    "documents": 79,
+    "excluded": [
+      "essay061"
+    ],
+    "scores": {
+      "exact/typed": {
+        "components": {
+          "constrained": {
+            "point": 0.6609477124183006,
+            "ci_low": 0.628448275862069,
+            "ci_high": 0.6918857847353317,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "unconstrained": {
+            "point": 0.659852820932134,
+            "ci_low": 0.6265951149826975,
+            "ci_high": 0.6918438023168549,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "delta": {
+            "point": 0.0010948914861665937,
+            "ci_low": -0.009066855739952763,
+            "ci_high": 0.012764159149785325,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "significant": false
+        },
+        "relations": {
+          "constrained": {
+            "point": 0.3155183515775918,
+            "ci_low": 0.26179636728736594,
+            "ci_high": 0.37303524751042405,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "unconstrained": {
+            "point": 0.3185378590078329,
+            "ci_low": 0.2633311389071758,
+            "ci_high": 0.3779648025423183,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "delta": {
+            "point": -0.0030195074302410974,
+            "ci_low": -0.01635431920812441,
+            "ci_high": 0.00908598590520083,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "significant": false
+        }
+      },
+      "exact/untyped": {
+        "components": {
+          "constrained": {
+            "point": 0.7761437908496732,
+            "ci_low": 0.7484609685766572,
+            "ci_high": 0.8027884591964731,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "unconstrained": {
+            "point": 0.7726901062959934,
+            "ci_low": 0.7443012692678979,
+            "ci_high": 0.8,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "delta": {
+            "point": 0.003453684553679781,
+            "ci_low": -0.0038226736484016496,
+            "ci_high": 0.014488832227300862,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "significant": false
+        },
+        "relations": {
+          "constrained": {
+            "point": 0.35930457179652286,
+            "ci_low": 0.3042065044852154,
+            "ci_high": 0.4174642492770725,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "unconstrained": {
+            "point": 0.35900783289817234,
+            "ci_low": 0.3028283646573443,
+            "ci_high": 0.41755699816198033,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "delta": {
+            "point": 0.0002967388983505237,
+            "ci_low": -0.015365211832644155,
+            "ci_high": 0.015126777028719507,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "significant": false
+        }
+      },
+      "overlap>=0.5/typed": {
+        "components": {
+          "constrained": {
+            "point": 0.7598039215686274,
+            "ci_low": 0.7333615679315432,
+            "ci_high": 0.7852620995975619,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "unconstrained": {
+            "point": 0.7579721995094031,
+            "ci_low": 0.7297970899083465,
+            "ci_high": 0.7851211120224675,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "delta": {
+            "point": 0.0018317220592243277,
+            "ci_low": -0.008051585612253056,
+            "ci_high": 0.01284813633957631,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "significant": false
+        },
+        "relations": {
+          "constrained": {
+            "point": 0.38892466194462333,
+            "ci_low": 0.33016255590805077,
+            "ci_high": 0.45019991601583254,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "unconstrained": {
+            "point": 0.38903394255874674,
+            "ci_low": 0.32934835089949555,
+            "ci_high": 0.4499689292543021,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "delta": {
+            "point": -0.00010928061412340817,
+            "ci_low": -0.01902018294652299,
+            "ci_high": 0.016827091948781132,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "significant": false
+        }
+      },
+      "overlap>=0.5/untyped": {
+        "components": {
+          "constrained": {
+            "point": 0.9035947712418301,
+            "ci_low": 0.8866563811577762,
+            "ci_high": 0.9198841454579055,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "unconstrained": {
+            "point": 0.8977923139820114,
+            "ci_low": 0.8797083839611178,
+            "ci_high": 0.9151069499219777,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "delta": {
+            "point": 0.00580245725981865,
+            "ci_low": 5.381024489328829e-05,
+            "ci_high": 0.0137133576599751,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "significant": true
+        },
+        "relations": {
+          "constrained": {
+            "point": 0.45331616226658084,
+            "ci_low": 0.39459960279816936,
+            "ci_high": 0.5145890394924737,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "unconstrained": {
+            "point": 0.45039164490861616,
+            "ci_low": 0.3913023033937577,
+            "ci_high": 0.5105579796458701,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "delta": {
+            "point": 0.0029245173579646733,
+            "ci_low": -0.021663376418369455,
+            "ci_high": 0.03016104235716759,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "significant": false
+        }
+      }
+    }
   }
 }

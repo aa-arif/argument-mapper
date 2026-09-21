@@ -1,0 +1,252 @@
+{
+  "corpus": "microtexts-en",
+  "split": "test",
+  "documents": 112,
+  "health": {
+    "constrained": {
+      "documents": 112,
+      "invalid_json": 0,
+      "invalid_rate": 0.0,
+      "truncated": 0,
+      "truncation_rate": 0.0,
+      "mean_output_tokens": 261.6
+    },
+    "unconstrained": {
+      "documents": 112,
+      "invalid_json": 8,
+      "invalid_rate": 0.0714,
+      "truncated": 8,
+      "truncation_rate": 0.0714,
+      "mean_output_tokens": 427.4
+    }
+  },
+  "scores": {
+    "exact/typed": {
+      "status": "not_applicable"
+    },
+    "exact/untyped": {
+      "components": {
+        "constrained": {
+          "point": 0.006993006993006993,
+          "ci_low": 0.0014044943820224719,
+          "ci_high": 0.013614987305138902,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "unconstrained": {
+          "point": 0.006364359586316627,
+          "ci_low": 0.0015408023951101418,
+          "ci_high": 0.012976480129764802,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "delta": {
+          "point": 0.0006286474066903658,
+          "ci_low": -0.0016059240137870255,
+          "ci_high": 0.0040512445200482135,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "significant": false
+      },
+      "relations": {
+        "constrained": {
+          "point": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "unconstrained": {
+          "point": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "delta": {
+          "point": 0.0,
+          "ci_low": 0.0,
+          "ci_high": 0.0,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "significant": false
+      }
+    },
+    "overlap>=0.5/typed": {
+      "status": "not_applicable"
+    },
+    "overlap>=0.5/untyped": {
+      "components": {
+        "constrained": {
+          "point": 0.6573426573426573,
+          "ci_low": 0.6042884990253411,
+          "ci_high": 0.7086515006952663,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "unconstrained": {
+          "point": 0.7048528241845664,
+          "ci_low": 0.6738768718801996,
+          "ci_high": 0.7351355689557937,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "delta": {
+          "point": -0.04751016684190912,
+          "ci_low": -0.08514977401679827,
+          "ci_high": -0.011377720544736842,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "significant": true
+      },
+      "relations": {
+        "constrained": {
+          "point": 0.07847800237812129,
+          "ci_low": 0.05066009591256344,
+          "ci_high": 0.10927573062261753,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "unconstrained": {
+          "point": 0.0945945945945946,
+          "ci_low": 0.06315645079777635,
+          "ci_high": 0.12810623314746455,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "delta": {
+          "point": -0.01611659221647331,
+          "ci_low": -0.028740976756703226,
+          "ci_high": -0.004308260170079742,
+          "confidence": 0.95,
+          "iterations": 10000
+        },
+        "significant": true
+      }
+    }
+  },
+  "both_parsed": {
+    "documents": 104,
+    "excluded": [
+      "micro_b001",
+      "micro_b035",
+      "micro_b037",
+      "micro_b052",
+      "micro_d11",
+      "micro_k009",
+      "micro_k015",
+      "micro_k016"
+    ],
+    "scores": {
+      "exact/typed": {
+        "status": "not_applicable"
+      },
+      "exact/untyped": {
+        "components": {
+          "constrained": {
+            "point": 0.008116883116883116,
+            "ci_low": 0.0016433853738701725,
+            "ci_high": 0.01594896331738437,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "unconstrained": {
+            "point": 0.00657354149548069,
+            "ci_low": 0.001607717041800643,
+            "ci_high": 0.013378206294342365,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "delta": {
+            "point": 0.0015433416214024262,
+            "ci_low": -0.0002441467849118841,
+            "ci_high": 0.004934237757133036,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "significant": false
+        },
+        "relations": {
+          "constrained": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "unconstrained": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "delta": {
+            "point": 0.0,
+            "ci_low": 0.0,
+            "ci_high": 0.0,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "significant": false
+        }
+      },
+      "overlap>=0.5/typed": {
+        "status": "not_applicable"
+      },
+      "overlap>=0.5/untyped": {
+        "components": {
+          "constrained": {
+            "point": 0.7159090909090909,
+            "ci_low": 0.6874003189792663,
+            "ci_high": 0.7437603993344426,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "unconstrained": {
+            "point": 0.7280197206244864,
+            "ci_low": 0.7010309278350515,
+            "ci_high": 0.7550352691412134,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "delta": {
+            "point": -0.012110629715395449,
+            "ci_low": -0.025474176065303437,
+            "ci_high": -0.0006166930471981922,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "significant": true
+        },
+        "relations": {
+          "constrained": {
+            "point": 0.09153952843273232,
+            "ci_low": 0.06043004966105857,
+            "ci_high": 0.1253600121267242,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "unconstrained": {
+            "point": 0.09887005649717515,
+            "ci_low": 0.06637806637806638,
+            "ci_high": 0.1340941512125535,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "delta": {
+            "point": -0.007330528064442829,
+            "ci_low": -0.01803035558871701,
+            "ci_high": 0.0025150405650140027,
+            "confidence": 0.95,
+            "iterations": 10000
+          },
+          "significant": false
+        }
+      }
+    }
+  }
+}

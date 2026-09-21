@@ -17,7 +17,15 @@ Reports three things:
   decoding guarantees syntax but not termination, so a bounded grammar and an
   unbounded one fail very differently here (DECISIONS D23).
 * **F1 with a paired bootstrap** -- whether the constraint changes extraction
-  quality, or only its parseability.
+  quality, or only its parseability. Reported twice: over every document, and
+  over only those where *both* runs produced parseable JSON.
+
+The second scoring is not a courtesy. An unconstrained run that fails to parse
+contributes no predictions at all on that document, which costs it recall and
+costs it nothing in precision -- so comparing over every document credits the
+unconstrained run for the documents it gave up on. Restricting to the documents
+both runs answered is the like-for-like comparison, and the difference between
+the two numbers is the size of that effect.
 """
 
 from __future__ import annotations
@@ -69,6 +77,20 @@ def _health(results: list[dict[str, Any]]) -> dict[str, object]:
             round(sum(int(r.get("output_tokens", 0)) for r in results) / total, 1) if total else 0.0
         ),
     }
+
+
+def unparseable(results: list[dict[str, Any]]) -> set[str]:
+    """Document ids whose generated text is not a JSON object."""
+    out: set[str] = set()
+    for entry in results:
+        try:
+            parsed = json.loads(str(entry.get("text", "")))
+        except (json.JSONDecodeError, TypeError):
+            out.add(str(entry.get("doc_id", "")))
+            continue
+        if not isinstance(parsed, dict):
+            out.add(str(entry.get("doc_id", "")))
+    return out
 
 
 def compare(
@@ -136,6 +158,19 @@ def main() -> int:
         "scores": compare(docs, c_preds, u_preds),
     }
 
+    # Like-for-like: only the documents both runs actually answered. A run that
+    # emits nothing is scored as predicting nothing, which is a free pass on
+    # precision, so the all-documents comparison flatters whichever run failed
+    # more often.
+    skipped = unparseable(c_results) | unparseable(u_results)
+    both = [d for d in docs if d.doc_id not in skipped]
+    if skipped:
+        payload["both_parsed"] = {
+            "documents": len(both),
+            "excluded": sorted(skipped),
+            "scores": compare(both, c_preds, u_preds),
+        }
+
     out_dir = args.root / "results" / "constrained"
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / f"ablation_{args.corpus}_{args.split}.json").write_text(
@@ -150,6 +185,14 @@ def main() -> int:
         print(
             f"  {name:<16}{h['invalid_rate']:>9.1%}{h['truncation_rate']:>12.1%}"
             f"{h['mean_output_tokens']:>14.0f}"
+        )
+
+    both_parsed = cast("dict[str, Any] | None", payload.get("both_parsed"))
+    if both_parsed:
+        print(
+            f"\n  {len(both_parsed['excluded'])} document(s) excluded below: "
+            "one run produced no parseable JSON, so scoring them compares an "
+            "answer against an abstention."
         )
 
     print()
@@ -167,6 +210,25 @@ def main() -> int:
                 f"{block['constrained']['point']:.3f} vs {block['unconstrained']['point']:.3f}  "
                 f"delta {d['point']:+.3f} [{d['ci_low']:+.3f},{d['ci_high']:+.3f}]  {verdict}"
             )
+
+    if both_parsed:
+        print(f"\n  like-for-like, {both_parsed['documents']} documents both runs answered:")
+        subset = cast("dict[str, Any]", both_parsed["scores"])
+        for criterion in STANDARD_CRITERIA:
+            entry = subset.get(criterion.label)
+            if not isinstance(entry, dict) or entry.get("status") == "not_applicable":
+                continue
+            for kind in ("components", "relations"):
+                block = cast("dict[str, Any]", entry[kind])
+                d = cast("dict[str, float]", block["delta"])
+                verdict = "significant" if block["significant"] else "within noise"
+                print(
+                    f"  {criterion.label:<22}{kind:<12}"
+                    f"{block['constrained']['point']:.3f} vs "
+                    f"{block['unconstrained']['point']:.3f}  "
+                    f"delta {d['point']:+.3f} "
+                    f"[{d['ci_low']:+.3f},{d['ci_high']:+.3f}]  {verdict}"
+                )
     return 0
 
 
