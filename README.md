@@ -656,8 +656,7 @@ uv sync --extra dev
 ### Data
 
 `arg-microtexts` downloads automatically. **Argument Annotated Essays v2 cannot
-be downloaded headlessly** — TUdatalib sits behind a proof-of-work bot
-challenge that returns an HTML page to any non-browser client. Fetch it once in
+be downloaded headlessly** — TUdatalib: Fetch it once in
 a browser:
 
 1. Open <https://tudatalib.ulb.tu-darmstadt.de/handle/tudatalib/2422>
