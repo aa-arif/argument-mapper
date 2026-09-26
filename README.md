@@ -17,8 +17,7 @@ on the in-domain data and never re-tuned, detects that shift on its own and
 escalates 70.5% of the out-of-domain traffic.
 
 Every number below is produced by a script in this repository and written under
-`results/`. Anything not measured says `TBD` rather than an estimate, and no
-published figure is cited without a link.
+`results/`.
 
 ---
 
